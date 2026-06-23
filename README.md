@@ -30,11 +30,20 @@ Detect the ATS provider from one job URL:
 PYTHONPATH=src python3 -m offerops parse "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582"
 ```
 
+Extract minimal metadata from a saved HTML fixture:
+
+```bash
+PYTHONPATH=src python3 -m offerops parse "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582" --html-file tests/fixtures/greenhouse.html
+```
+
 Example output:
 
 ```json
 {
   "adapter": "greenhouse_adapter",
+  "company": "Bugcrowd",
+  "job_title": "Security Engineering Intern",
+  "location": "Remote, USA",
   "provider": "greenhouse",
   "reason": "host:greenhouse.io"
 }

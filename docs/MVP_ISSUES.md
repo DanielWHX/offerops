@@ -31,22 +31,28 @@ Labels: `type:feature`, `area:parser`, `priority:p0`
 
 Goal:
 
-Extract title, company, and location from a detected job page when available.
+Extract title, company, and location from a detected job page using URL plus saved HTML input.
 
 Scope:
 
-- Use deterministic DOM/text parsing first.
+- Input one job URL.
+- Optionally pass `--html-file <path>` for deterministic metadata extraction.
+- Return `job_title`, `company`, and `location`.
 - Return null for missing values.
 
 Verification:
 
-- Add tests for at least five saved job page fixtures.
+- Add saved HTML fixtures for Workday, Greenhouse, Ashby, Oracle Cloud HCM, and Unknown.
+- Add tests for provider, adapter, `job_title`, `company`, and `location`.
 
 Out of scope:
 
-- Full JD parsing.
-- Salary extraction.
-- Skill extraction.
+- No live browser automation.
+- No network fetch in tests.
+- No full JD parsing.
+- No salary extraction.
+- No skill extraction.
+- No Agent fallback.
 
 ## 3. Add parser result object
 
