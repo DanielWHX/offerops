@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Project workflow
-    url: https://github.com/
+    url: https://github.com/DanielWHX/offerops/blob/main/docs/WORKFLOW.md
     about: Use docs/WORKFLOW.md before opening large issues.
