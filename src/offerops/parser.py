@@ -2,7 +2,24 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
+from .metadata import extract_job_metadata
 from .models import ProviderMatch
+
+
+def parse_job_page(url: str, html: str | None = None) -> ProviderMatch:
+    provider = detect_provider(url)
+    if provider.provider == "unknown":
+        return provider
+
+    metadata = extract_job_metadata(html)
+    return ProviderMatch(
+        provider=provider.provider,
+        adapter=provider.adapter,
+        reason=provider.reason,
+        job_title=metadata.job_title,
+        company=metadata.company,
+        location=metadata.location,
+    )
 
 
 def detect_provider(url: str) -> ProviderMatch:
