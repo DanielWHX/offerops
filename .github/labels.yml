@@ -1,0 +1,48 @@
+- name: type:feature
+  color: "0E8A16"
+  description: New user-visible behavior
+- name: type:bug
+  color: "D73A4A"
+  description: Broken behavior or regression
+- name: type:docs
+  color: "0075CA"
+  description: Documentation-only change
+- name: type:test
+  color: "5319E7"
+  description: Tests, fixtures, or verification tooling
+- name: type:chore
+  color: "C5DEF5"
+  description: Maintenance work
+- name: area:parser
+  color: "BFD4F2"
+  description: Job page parser
+- name: area:adapter
+  color: "BFDADC"
+  description: ATS adapter behavior
+- name: area:agent
+  color: "D4C5F9"
+  description: Agent fallback behavior
+- name: area:test
+  color: "FBCA04"
+  description: Test coverage and fixtures
+- name: area:docs
+  color: "0052CC"
+  description: Documentation
+- name: area:infra
+  color: "C2E0C6"
+  description: Tooling, CI, and repo setup
+- name: priority:p0
+  color: "B60205"
+  description: Required for MVP
+- name: priority:p1
+  color: "D93F0B"
+  description: Important but not blocking first demo
+- name: priority:p2
+  color: "FBCA04"
+  description: Nice to have
+- name: good-first-slice
+  color: "7057FF"
+  description: Small vertical slice suitable for one session
+- name: blocked
+  color: "000000"
+  description: Waiting on external decision or dependency

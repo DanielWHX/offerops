@@ -1,0 +1,26 @@
+name: Docs
+description: Improve project documentation.
+title: "[Docs]: "
+labels: ["type:docs"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      placeholder: "Explain deterministic-first, AI-fallback architecture."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      placeholder: "Update README and link to workflow doc."
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done When
+      placeholder: "A new reader can understand the MVP boundary in 2 minutes."
+    validations:
+      required: true

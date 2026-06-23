@@ -1,0 +1,29 @@
+# Local application records and generated outputs
+job_application_ledger.csv
+output/
+tmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/

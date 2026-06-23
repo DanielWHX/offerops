@@ -1,0 +1,37 @@
+name: Feature Slice
+description: Plan one small vertical slice.
+title: "[Feature]: "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What user-visible behavior should change?
+      placeholder: "Detect Greenhouse job pages from a single URL."
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included in this slice?
+      placeholder: "- Input one URL\n- Return provider name\n- No form filling"
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: What command, test, or demo proves this works?
+      placeholder: "Run parser against saved Greenhouse fixture and confirm provider=greenhouse."
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of Scope
+      description: What should not be done in this issue?
+      placeholder: "- No Agent fallback\n- No browser autofill\n- No final submit"
+    validations:
+      required: true

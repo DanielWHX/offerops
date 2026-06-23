@@ -1,0 +1,36 @@
+name: Bug
+description: Report a broken behavior with a repro path.
+title: "[Bug]: "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Symptom
+      description: What went wrong?
+      placeholder: "Lever page is detected as Unknown."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Smallest command, fixture, or URL that reproduces it.
+      placeholder: "Run parser on fixtures/lever/example.html."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: "provider=lever"
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: How will the fix be verified?
+      placeholder: "Add regression test for Lever fixture."
+    validations:
+      required: true
