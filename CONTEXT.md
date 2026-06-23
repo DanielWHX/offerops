@@ -4,7 +4,7 @@
 
 - `OfferOps`: human-in-the-loop job application workflow assistant.
 - `Job Page Parser`: module that receives one job URL, reads the current page, and identifies the ATS provider plus minimal job metadata.
-- `ATS Provider`: application system such as Workday, Greenhouse, Lever, Ashby, or Unknown.
+- `ATS Provider`: application system such as Workday, Greenhouse, Lever, Ashby, Oracle Cloud HCM, or Unknown.
 - `Adapter`: deterministic script for one ATS provider.
 - `Agent Fallback`: AI step used only for missing fields, unclear labels, or failed deterministic fills.
 - `Review Stop`: hard boundary before final submit. The system must stop for human review.

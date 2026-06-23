@@ -22,6 +22,30 @@ Deterministic first, AI fallback.
 
 AI should not be the main browser executor. It should only help with uncertain semantic tasks such as unclear labels, missing fields, and unknown page states.
 
+## Current Slice
+
+Detect the ATS provider from one job URL:
+
+```bash
+PYTHONPATH=src python3 -m offerops parse "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582"
+```
+
+Example output:
+
+```json
+{
+  "adapter": "greenhouse_adapter",
+  "provider": "greenhouse",
+  "reason": "host:greenhouse.io"
+}
+```
+
+Run tests:
+
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
 ## Project Docs
 
 - [Context](./CONTEXT.md)
