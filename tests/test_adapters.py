@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 import unittest
 
 from offerops.adapters import get_adapter, plan_adapter
@@ -69,6 +72,44 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(adapter_result.provider, "unknown")
         self.assertEqual(adapter_result.adapter, "unknown_adapter")
         self.assertEqual(adapter_result.status, "manual_review_required")
+
+    def test_cli_plan_outputs_known_provider_adapter_result(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "offerops",
+                "plan",
+                "https://boards.greenhouse.io/example/jobs/1",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["provider"], "greenhouse")
+        self.assertEqual(payload["adapter"], "greenhouse_adapter")
+        self.assertEqual(payload["status"], "not_implemented")
+
+    def test_cli_plan_outputs_unknown_manual_review_result(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "offerops",
+                "plan",
+                "https://example.com/jobs/123",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["provider"], "unknown")
+        self.assertEqual(payload["adapter"], "unknown_adapter")
+        self.assertEqual(payload["status"], "manual_review_required")
 
 
 if __name__ == "__main__":
