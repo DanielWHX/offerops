@@ -31,6 +31,13 @@ ProviderDetection: URL -> provider/adapter/reason
 ParserResult: provider/adapter/reason + job_title/company/location
 ```
 
+The adapter layer is also registered but non-executing:
+
+```text
+Known provider adapter -> status=not_implemented
+Unknown adapter -> status=manual_review_required
+```
+
 Detect the ATS provider from one job URL:
 
 ```bash
@@ -54,6 +61,18 @@ Example output:
   "provider": "greenhouse",
   "reason": "host:greenhouse.io"
 }
+```
+
+Inspect adapter routing from Python:
+
+```bash
+PYTHONPATH=src python3 - <<'PY'
+from offerops.adapters import plan_adapter
+from offerops.parser import parse_job_page
+
+result = parse_job_page("https://job-boards.greenhouse.io/bugcrowd/jobs/8016582")
+print(plan_adapter(result).to_dict())
+PY
 ```
 
 Run tests:

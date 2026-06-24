@@ -100,21 +100,31 @@ Labels: `type:feature`, `area:adapter`, `priority:p1`
 
 Goal:
 
-Create empty adapter entrypoints for Workday, Greenhouse, Lever, Ashby, and Unknown.
+Create non-executing adapter skeletons for every provider currently detected by the parser.
 
 Scope:
 
-- Each adapter exposes the same minimal interface.
-- Unknown adapter should stop and ask for manual review.
+- Add a shared adapter interface.
+- Add adapter entrypoints for Workday, Greenhouse, Lever, Ashby, Oracle Cloud HCM, and Unknown.
+- Add an adapter registry that routes from `ParserResult.adapter`.
+- Known provider adapters return `not_implemented`.
+- Unknown adapter returns `manual_review_required`.
 
 Verification:
 
-- Parser can route to an adapter name without running real form filling.
+- Add tests for adapter registry coverage.
+- Add tests that each known provider routes to the expected adapter class.
+- Add tests that unknown provider stops with manual review.
+- Keep parser tests passing.
 
 Out of scope:
 
-- Real Workday filling.
-- Browser automation.
+- No real Workday filling.
+- No browser automation.
+- No network fetch.
+- No Agent fallback.
+- No form filling.
+- No final submit behavior.
 
 ## 5. Add missing-field review plan
 
