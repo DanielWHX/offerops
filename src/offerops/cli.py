@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan = subparsers.add_parser("plan", help="Plan the adapter action for one job URL.")
     plan.add_argument("url", help="Job application URL")
     plan.add_argument("--html-file", help="Saved HTML file used for metadata extraction")
+    plan.add_argument("--profile-file", help="Fake applicant profile JSON for fill preview")
 
     demo = subparsers.add_parser("demo", help="Fetch one job page and print a planning report.")
     demo.add_argument("url", help="Job application URL")
@@ -42,8 +43,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "plan":
         html = _read_html_file(args.html_file)
+        applicant_profile = _read_profile_file(args.profile_file)
         result = parse_job_page(args.url, html)
-        adapter_result = plan_adapter(result, html)
+        adapter_result = plan_adapter(result, html, applicant_profile)
         print(json.dumps(adapter_result.to_dict(), indent=2, sort_keys=True))
         return 0
 
@@ -78,6 +80,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _read_html_file(path: str | None) -> str | None:
     return Path(path).read_text(encoding="utf-8") if path else None
+
+
+def _read_profile_file(path: str | None) -> dict[str, str] | None:
+    if not path:
+        return None
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("profile file must contain a JSON object")
+
+    return {
+        key: value
+        for key, value in payload.items()
+        if isinstance(key, str) and isinstance(value, str)
+    }
 
 
 def _fetch_url_html(url: str, timeout: float) -> str:
