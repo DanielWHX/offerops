@@ -84,7 +84,8 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 ## Project Docs
 
 - [Context](./CONTEXT.md)
-- [Solo Developer Workflow](./docs/WORKFLOW.md)
+- [Team Development Workflow](./docs/WORKFLOW.md)
+- [Agent Workflow](./AGENTS.md)
 - [GitHub Project Setup](./docs/GITHUB_PROJECT_SETUP.md)
 - [MVP Seed Issues](./docs/MVP_ISSUES.md)
 

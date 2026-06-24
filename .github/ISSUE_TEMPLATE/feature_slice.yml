@@ -20,11 +20,27 @@ body:
     validations:
       required: true
   - type: textarea
+    id: module_boundary
+    attributes:
+      label: Module Boundary
+      description: Which module owns this change?
+      placeholder: "parser / metadata / models / adapters / agent contract / docs / infra"
+    validations:
+      required: true
+  - type: textarea
     id: verification
     attributes:
       label: Verification
       description: What command, test, or demo proves this works?
       placeholder: "Run parser against saved Greenhouse fixture and confirm provider=greenhouse."
+    validations:
+      required: true
+  - type: textarea
+    id: review_focus
+    attributes:
+      label: Review Focus
+      description: What should reviewers check most carefully?
+      placeholder: "- Scope does not expand beyond parser detection\n- No browser automation\n- No final submit"
     validations:
       required: true
   - type: textarea

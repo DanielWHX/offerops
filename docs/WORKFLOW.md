@@ -1,8 +1,14 @@
-# Solo Developer Workflow
+# Team Development Workflow
 
 ## Operating Rule
 
-Keep GitHub as the source of truth for daily engineering progress.
+Keep GitHub as the source of truth for engineering progress.
+
+Minimum Necessary System:
+
+- Finish the smallest current-issue loop.
+- Do not add abstractions, modules, schemas, or docs for future possibilities.
+- Reuse existing files and vocabulary unless a new entity is required now.
 
 Notion can store long-term ideas, but daily execution should leave traces in GitHub:
 
@@ -10,24 +16,50 @@ Notion can store long-term ideas, but daily execution should leave traces in Git
 Issue -> Branch -> Commit -> Test/Demo -> PR -> Merge
 ```
 
+## Roles
+
+- `Tech Lead`: owns MVP scope, module boundaries, and final architecture calls.
+- `Contributor`: owns one issue at a time and delivers a verified vertical slice.
+- `Reviewer`: checks scope, verification, safety, and risk before merge.
+- `Agent`: follows `AGENTS.md` and works only inside the active issue scope.
+
+The same person can play multiple roles, but every PR must have an author and a reviewer.
+
 ## Kanban Columns
 
 - `Backlog`: good ideas, not scheduled.
 - `Ready`: small enough to start this week.
-- `Doing`: currently active. Limit to 1 or 2.
-- `Review`: implementation done, waiting for self-review or cleanup.
+- `Doing`: currently active. Each contributor should own at most one issue.
+- `Review`: implementation done, waiting for review or cleanup.
 - `Done`: merged.
 - `Parking Lot`: intentionally paused.
 
-## Daily Loop
+## Contributor Loop
 
 1. Pick one `Ready` issue.
-2. Create a branch from the issue.
-3. Build one vertical slice.
-4. Run the verification path from the issue.
-5. Open a PR, even for solo work.
-6. Self-review the diff.
-7. Merge and close the issue.
+2. Comment on the issue if ownership is not obvious.
+3. Create a branch from the issue.
+4. Build one vertical slice.
+5. Run the verification path from the issue.
+6. Open a PR.
+7. Request review.
+8. Merge only after review approval or explicit owner authorization.
+
+## Agent Loop
+
+Agents must follow the same loop as contributors:
+
+```text
+Read context -> state scope -> edit -> verify -> PR -> review
+```
+
+Before editing, an agent should read:
+
+- `AGENTS.md`
+- `CONTEXT.md`
+- this workflow
+- the active GitHub issue
+- relevant source files and tests
 
 ## Issue Standard
 
@@ -37,6 +69,8 @@ Every issue should answer:
 - What is explicitly in scope?
 - How will it be verified?
 - What is out of scope?
+- Which module boundary owns the change?
+- What should reviewers pay special attention to?
 
 ## PR Standard
 
@@ -45,17 +79,20 @@ Every PR should include:
 - What changed.
 - How it was verified.
 - Any remaining risk.
+- Linked issue.
+- Safety statement.
+- Reviewer checklist.
 
 ## Branch Naming
 
 Use short names:
 
 ```text
-feat/provider-detect
-feat/workday-adapter-skeleton
-fix/lever-title-parser
-docs/mvp-scope
-test/job-page-fixtures
+codex/provider-detect
+codex/workday-adapter-skeleton
+codex/lever-title-parser
+codex/mvp-scope
+codex/job-page-fixtures
 ```
 
 ## Commit Style
@@ -67,6 +104,29 @@ feat: detect greenhouse job pages
 test: add workday job page fixture
 docs: define mvp workflow
 fix: avoid treating unknown pages as workday
+```
+
+## Review Standard
+
+Reviewers should focus on:
+
+- Scope: the PR only does what the issue says.
+- Verification: tests, fixtures, or commands prove the behavior.
+- Safety: no final submit, no unintended browser automation, no live LLM call.
+- Necessity: new entities are required by this issue, not speculative.
+- Boundaries: parser, metadata, models, adapters, and agent contracts stay separate.
+- Handoff: future contributors can understand what changed from the PR alone.
+
+## Daily Handoff
+
+When stopping work, leave one short issue or PR comment:
+
+```text
+Status: in progress / blocked / ready for review
+Changed: ...
+Verified: ...
+Next: ...
+Risk: ...
 ```
 
 ## Weekly Review
