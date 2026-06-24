@@ -24,3 +24,10 @@ body:
       placeholder: "A new reader can understand the MVP boundary in 2 minutes."
     validations:
       required: true
+  - type: textarea
+    id: review_focus
+    attributes:
+      label: Review Focus
+      placeholder: "Check whether this aligns with CONTEXT.md and docs/WORKFLOW.md."
+    validations:
+      required: true

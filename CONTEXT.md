@@ -11,6 +11,8 @@
 - `AdapterResult`: non-browser adapter planning result for adapter status and next handling.
 - `Agent Fallback`: AI step used only for missing fields, unclear labels, or failed deterministic fills.
 - `Review Stop`: hard boundary before final submit. The system must stop for human review.
+- `Contributor`: human or Agent owner for one GitHub issue at a time.
+- `Reviewer`: person or Agent checking scope, verification, safety, and handoff quality.
 
 ## MVP Scope
 
@@ -35,3 +37,13 @@ The first MVP focuses on the smallest useful slice:
 ## Engineering Principle
 
 Deterministic first, AI fallback.
+
+## Collaboration Principle
+
+Repo docs and GitHub issues are the source of truth.
+
+Every contributor and Agent follows the same loop:
+
+```text
+Issue -> Branch -> Verification -> PR -> Review -> Merge
+```
