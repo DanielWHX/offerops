@@ -21,6 +21,8 @@ class _MetadataHTMLParser(HTMLParser):
         self.title_parts: list[str] = []
         self.meta: dict[str, str] = {}
         self.json_ld_blocks: list[str] = []
+        self.h1_parts: list[str] = []
+        self.location_parts: list[str] = []
         self._current: str | None = None
         self._json_ld_depth = 0
 
@@ -30,6 +32,17 @@ class _MetadataHTMLParser(HTMLParser):
 
         if tag == "title":
             self._current = "title"
+            return
+
+        if tag == "h1":
+            self._current = "h1"
+            return
+
+        class_names = set(attr_map.get("class", "").lower().split())
+        if tag in {"p", "span", "div"} and (
+            "job-location" in class_names or "location" in class_names
+        ):
+            self._current = "location"
             return
 
         if tag == "meta":
@@ -51,6 +64,10 @@ class _MetadataHTMLParser(HTMLParser):
         tag = tag.lower()
         if tag == "title" and self._current == "title":
             self._current = None
+        elif tag == "h1" and self._current == "h1":
+            self._current = None
+        elif tag in {"p", "span", "div"} and self._current == "location":
+            self._current = None
         elif tag == "script" and self._current == "json_ld":
             self._json_ld_depth = 0
             self._current = None
@@ -58,12 +75,24 @@ class _MetadataHTMLParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._current == "title":
             self.title_parts.append(data)
+        elif self._current == "h1":
+            self.h1_parts.append(data)
+        elif self._current == "location":
+            self.location_parts.append(data)
         elif self._current == "json_ld" and self._json_ld_depth:
             self.json_ld_blocks.append(data)
 
     @property
     def title(self) -> str | None:
         return _clean_text(" ".join(self.title_parts)) or None
+
+    @property
+    def h1(self) -> str | None:
+        return _clean_text(" ".join(self.h1_parts)) or None
+
+    @property
+    def location(self) -> str | None:
+        return _clean_text(" ".join(self.location_parts)) or None
 
 
 def extract_job_metadata(html: str | None) -> JobMetadata:
@@ -76,11 +105,14 @@ def extract_job_metadata(html: str | None) -> JobMetadata:
     json_ld = _extract_from_json_ld(parser.json_ld_blocks)
     meta = _extract_from_meta(parser.meta)
     title = _extract_from_title(parser.title)
+    body = _extract_from_body(parser.h1, parser.location)
 
     return JobMetadata(
-        job_title=json_ld.job_title or meta.job_title or title.job_title,
+        job_title=(
+            json_ld.job_title or meta.job_title or title.job_title or body.job_title
+        ),
         company=json_ld.company or meta.company or title.company,
-        location=json_ld.location or meta.location or title.location,
+        location=json_ld.location or meta.location or title.location or body.location,
     )
 
 
@@ -185,6 +217,10 @@ def _extract_from_title(title: str | None) -> JobMetadata:
     if not title:
         return JobMetadata()
     return _split_title(title)
+
+
+def _extract_from_body(h1: str | None, location: str | None) -> JobMetadata:
+    return JobMetadata(job_title=_clean_text(h1), location=_clean_text(location))
 
 
 def _split_title(title: str) -> JobMetadata:

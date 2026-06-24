@@ -6,6 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 
+from offerops.metadata import extract_job_metadata
 from offerops.parser import parse_job_page
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -90,6 +91,151 @@ class MetadataExtractionTests(unittest.TestCase):
         self.assertEqual(payload["job_title"], "Security Engineering Intern")
         self.assertEqual(payload["company"], "Bugcrowd")
         self.assertEqual(payload["location"], "Remote, USA")
+
+    def test_json_ld_graph_extracts_job_posting(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <script type="application/ld+json">
+              {
+                "@graph": [
+                  {"@type": "Organization", "name": "Example"},
+                  {
+                    "@type": "JobPosting",
+                    "title": "Data Engineering Intern",
+                    "hiringOrganization": {"name": "Graph Corp"},
+                    "jobLocation": {
+                      "address": {
+                        "addressLocality": "Boston",
+                        "addressRegion": "MA",
+                        "addressCountry": "USA"
+                      }
+                    }
+                  }
+                ]
+              }
+            </script>
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "Data Engineering Intern")
+        self.assertEqual(metadata.company, "Graph Corp")
+        self.assertEqual(metadata.location, "Boston, MA, USA")
+
+    def test_json_ld_list_extracts_job_posting_with_string_organization(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <script type="application/ld+json">
+              [
+                {"@type": "BreadcrumbList"},
+                {
+                  "@type": ["Thing", "JobPosting"],
+                  "title": "Platform Intern",
+                  "hiringOrganization": "List Labs",
+                  "jobLocation": "Remote"
+                }
+              ]
+            </script>
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "Platform Intern")
+        self.assertEqual(metadata.company, "List Labs")
+        self.assertEqual(metadata.location, "Remote")
+
+    def test_json_ld_multiple_locations_are_joined(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <script type="application/ld+json">
+              {
+                "@type": "JobPosting",
+                "title": "Backend Intern",
+                "hiringOrganization": {"name": "Multi City Co"},
+                "jobLocation": [
+                  {
+                    "address": {
+                      "addressLocality": "Austin",
+                      "addressRegion": "TX"
+                    }
+                  },
+                  {
+                    "address": {
+                      "addressLocality": "Denver",
+                      "addressRegion": "CO"
+                    }
+                  }
+                ]
+              }
+            </script>
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "Backend Intern")
+        self.assertEqual(metadata.company, "Multi City Co")
+        self.assertEqual(metadata.location, "Austin, TX; Denver, CO")
+
+    def test_missing_json_ld_optional_fields_return_null(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <script type="application/ld+json">
+              {
+                "@type": "JobPosting",
+                "title": "Frontend Intern"
+              }
+            </script>
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "Frontend Intern")
+        self.assertIsNone(metadata.company)
+        self.assertIsNone(metadata.location)
+
+    def test_meta_fallback_uses_open_graph_and_job_location(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <meta property="og:title" content="Design Intern at Pixel Works Careers">
+            <meta name="job:location" content="New York, NY">
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "Design Intern")
+        self.assertEqual(metadata.company, "Pixel Works")
+        self.assertEqual(metadata.location, "New York, NY")
+
+    def test_meta_fallback_uses_twitter_title_and_company(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <meta name="twitter:title" content="QA Intern">
+            <meta name="company" content="Quality Co">
+            <meta name="location" content="Remote, Canada">
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "QA Intern")
+        self.assertEqual(metadata.company, "Quality Co")
+        self.assertEqual(metadata.location, "Remote, Canada")
+
+    def test_document_title_fallback_splits_company(self) -> None:
+        metadata = extract_job_metadata(
+            "<title>Product Intern - Roadmap Inc Jobs</title>"
+        )
+
+        self.assertEqual(metadata.job_title, "Product Intern")
+        self.assertEqual(metadata.company, "Roadmap Inc")
+        self.assertIsNone(metadata.location)
+
+    def test_body_visible_title_and_location_fallback(self) -> None:
+        metadata = extract_job_metadata(
+            """
+            <main>
+              <h1>Machine Learning Intern</h1>
+              <p class="job-location">San Francisco, CA</p>
+            </main>
+            """
+        )
+
+        self.assertEqual(metadata.job_title, "Machine Learning Intern")
+        self.assertIsNone(metadata.company)
+        self.assertEqual(metadata.location, "San Francisco, CA")
 
 
 def _fixture(name: str) -> str:
