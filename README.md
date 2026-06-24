@@ -54,7 +54,7 @@ Current deterministic coverage:
 | --- | --- | --- | --- |
 | Workday | Real URL, shard subdomain, no-scheme URL | `tests/fixtures/workday.html` | `workday_adapter` |
 | Greenhouse | `boards.greenhouse.io`, `job-boards.greenhouse.io` | `tests/fixtures/greenhouse.html` | `greenhouse_adapter` |
-| Lever | `jobs.lever.co`, `/apply`, custom jobs subdomain | Not covered yet | `lever_adapter` |
+| Lever | `jobs.lever.co`, `/apply`, custom jobs subdomain | `tests/fixtures/lever.html` | `lever_adapter` |
 | Ashby | `jobs.ashbyhq.com`, `/application` | `tests/fixtures/ashby.html` | `ashby_adapter` |
 | Oracle Cloud HCM | `oraclecloud.com` Candidate Experience path | `tests/fixtures/oracle_cloud_hcm.html` | `oracle_cloud_hcm_adapter` |
 | Unknown | Generic jobs URL, missing host | `tests/fixtures/unknown.html` | `unknown_adapter` |
