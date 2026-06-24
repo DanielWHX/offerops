@@ -38,6 +38,14 @@ Known provider adapter -> status=not_implemented
 Unknown adapter -> status=manual_review_required
 ```
 
+The Agent Fallback contract is defined but not executed:
+
+```text
+MissingFieldReviewPlan -> field_reviews + stop_for_human_review
+```
+
+See `docs/AGENT_FALLBACK.md` and `tests/fixtures/missing_field_review_plan.json`.
+
 ## Parser Coverage
 
 Current deterministic coverage:
