@@ -13,6 +13,7 @@ AdapterStatus = Literal["planned", "not_implemented", "manual_review_required"]
 class AdapterContext:
     parser_result: ParserResult
     html: str | None = None
+    applicant_profile: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True)

@@ -102,6 +102,65 @@ class AdapterRegistryTests(unittest.TestCase):
         )
         self.assertEqual(details["review_reasons"], ["final_submit_boundary"])
 
+    def test_greenhouse_adapter_previews_fill_plan_from_profile(self) -> None:
+        html = _fixture("greenhouse_application.html")
+        profile = _json_fixture("applicant_profile.json")
+        parser_result = parse_job_page(
+            "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582",
+            html,
+        )
+
+        adapter_result = plan_adapter(parser_result, html, profile)
+        details = adapter_result.to_dict()["details"]
+        self.assertIsInstance(details, dict)
+
+        fill_plan = details["fill_plan"]
+        self.assertEqual(
+            [item["status"] for item in fill_plan],
+            ["ready", "ready", "ready", "ready", "missing_required"],
+        )
+        self.assertEqual(fill_plan[0]["value_source"], "profile.first_name")
+        self.assertFalse(fill_plan[-1]["value_present"])
+        self.assertEqual(fill_plan[-1]["action"], "review_required")
+        self.assertEqual(
+            details["review_items"],
+            [
+                {
+                    "field_key": "resume",
+                    "label": "Resume/CV",
+                    "issue": "profile_value_missing",
+                    "required": True,
+                    "value_source": "profile.resume",
+                }
+            ],
+        )
+
+    def test_cli_plan_accepts_profile_file_for_greenhouse_preview(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "offerops",
+                "plan",
+                "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582",
+                "--html-file",
+                str(FIXTURES / "greenhouse_application.html"),
+                "--profile-file",
+                str(FIXTURES / "applicant_profile.json"),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["status"], "planned")
+        self.assertEqual(
+            payload["details"]["review_reasons"],
+            ["required_profile_value_missing", "final_submit_boundary"],
+        )
+        self.assertEqual(payload["details"]["review_items"][0]["field_key"], "resume")
+
     def test_cli_plan_outputs_known_provider_adapter_result(self) -> None:
         completed = subprocess.run(
             [
@@ -207,6 +266,10 @@ class AdapterRegistryTests(unittest.TestCase):
 
 def _fixture(name: str) -> str:
     return (FIXTURES / name).read_text(encoding="utf-8")
+
+
+def _json_fixture(name: str) -> dict[str, str]:
+    return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

@@ -105,6 +105,15 @@ print(plan_adapter(result).to_dict())
 PY
 ```
 
+Preview a Greenhouse fill plan from saved HTML and a fake profile:
+
+```bash
+PYTHONPATH=src python3 -m offerops plan "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582" --html-file tests/fixtures/greenhouse_application.html --profile-file tests/fixtures/applicant_profile.json
+```
+
+The preview reports value sources and missing required values, but never prints
+profile values or fills the form.
+
 Run a live planning demo against one real job page:
 
 ```bash

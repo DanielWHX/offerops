@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from offerops.models import ParserResult
 
 from .ashby import AshbyAdapter
@@ -26,6 +28,16 @@ def get_adapter(adapter_name: str) -> ATSAdapter:
     return ADAPTERS_BY_NAME.get(adapter_name, _UNKNOWN_ADAPTER)
 
 
-def plan_adapter(result: ParserResult, html: str | None = None) -> AdapterResult:
+def plan_adapter(
+    result: ParserResult,
+    html: str | None = None,
+    applicant_profile: Mapping[str, str] | None = None,
+) -> AdapterResult:
     adapter = get_adapter(result.adapter)
-    return adapter.plan(AdapterContext(parser_result=result, html=html))
+    return adapter.plan(
+        AdapterContext(
+            parser_result=result,
+            html=html,
+            applicant_profile=applicant_profile,
+        )
+    )

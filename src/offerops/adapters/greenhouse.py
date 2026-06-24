@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from html import unescape
 from html.parser import HTMLParser
 from typing import Any
@@ -18,6 +19,30 @@ class GreenhouseAdapter(SkeletonAdapter):
         if not fields:
             return super().plan(context)
 
+        details = {
+            "field_count": len(fields),
+            "fields": fields,
+            "planned_steps": [
+                "inspect_application_fields",
+                "prepare_deterministic_fill",
+                "stop_before_final_submit",
+            ],
+            "review_reasons": ["final_submit_boundary"],
+        }
+
+        if context.applicant_profile is not None:
+            fill_plan, review_items = _build_fill_plan(
+                fields,
+                context.applicant_profile,
+            )
+            details["fill_plan"] = fill_plan
+            details["review_items"] = review_items
+            if review_items:
+                details["review_reasons"] = [
+                    "required_profile_value_missing",
+                    "final_submit_boundary",
+                ]
+
         return AdapterResult(
             provider=self.provider,
             adapter=self.adapter,
@@ -26,16 +51,7 @@ class GreenhouseAdapter(SkeletonAdapter):
                 "Greenhouse application field preflight completed; "
                 "stop before any form execution."
             ),
-            details={
-                "field_count": len(fields),
-                "fields": fields,
-                "planned_steps": [
-                    "inspect_application_fields",
-                    "prepare_deterministic_fill",
-                    "stop_before_final_submit",
-                ],
-                "review_reasons": ["final_submit_boundary"],
-            },
+            details=details,
         )
 
 
@@ -128,6 +144,64 @@ def _extract_application_fields(html: str | None) -> list[dict[str, object]]:
         )
 
     return fields
+
+
+def _build_fill_plan(
+    fields: list[dict[str, object]],
+    applicant_profile: Mapping[str, str],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    fill_plan: list[dict[str, object]] = []
+    review_items: list[dict[str, object]] = []
+
+    for field in fields:
+        field_key = _string_value(field.get("field_key"))
+        if not field_key:
+            continue
+
+        value_present = bool(_string_value(applicant_profile.get(field_key)))
+        required = bool(field.get("required"))
+        status = _fill_status(value_present, required)
+        item = {
+            "field_key": field_key,
+            "label": field.get("label"),
+            "input_name": field.get("input_name"),
+            "action": _fill_action(field_key, status),
+            "value_source": f"profile.{field_key}",
+            "value_present": value_present,
+            "status": status,
+        }
+        fill_plan.append(item)
+
+        if status == "missing_required":
+            review_items.append(
+                {
+                    "field_key": field_key,
+                    "label": field.get("label"),
+                    "issue": "profile_value_missing",
+                    "required": True,
+                    "value_source": f"profile.{field_key}",
+                }
+            )
+
+    return fill_plan, review_items
+
+
+def _fill_status(value_present: bool, required: bool) -> str:
+    if value_present:
+        return "ready"
+    if required:
+        return "missing_required"
+    return "skip_optional"
+
+
+def _fill_action(field_key: str, status: str) -> str:
+    if status == "missing_required":
+        return "review_required"
+    if status == "skip_optional":
+        return "skip"
+    if field_key == "resume":
+        return "upload_file"
+    return "fill_text"
 
 
 def _field_key(*values: str | None) -> str | None:
