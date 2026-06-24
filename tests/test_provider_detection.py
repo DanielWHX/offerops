@@ -5,6 +5,7 @@ import subprocess
 import sys
 import unittest
 
+from offerops.adapters import get_adapter
 from offerops.parser import detect_provider
 
 WORKDAY_URL = (
@@ -28,6 +29,81 @@ GREENHOUSE_URL = (
 
 
 class ProviderDetectionTests(unittest.TestCase):
+    def test_provider_url_variant_matrix_routes_to_registered_adapters(self) -> None:
+        cases = [
+            (
+                "workday shard subdomain",
+                "https://generac.wd5.myworkdayjobs.com/en-US/external/job/example",
+                "workday",
+                "workday_adapter",
+            ),
+            (
+                "workday without scheme",
+                "generac.wd5.myworkdayjobs.com/en-US/external/job/example",
+                "workday",
+                "workday_adapter",
+            ),
+            (
+                "greenhouse boards host",
+                "https://boards.greenhouse.io/example/jobs/123",
+                "greenhouse",
+                "greenhouse_adapter",
+            ),
+            (
+                "greenhouse job boards host",
+                "https://job-boards.greenhouse.io/example/jobs/123",
+                "greenhouse",
+                "greenhouse_adapter",
+            ),
+            (
+                "lever apply path",
+                "https://jobs.lever.co/example-company/example-role/apply",
+                "lever",
+                "lever_adapter",
+            ),
+            (
+                "lever custom jobs subdomain",
+                "https://jobs.example.lever.co/example-role",
+                "lever",
+                "lever_adapter",
+            ),
+            (
+                "ashby application path",
+                "https://jobs.ashbyhq.com/example-company/example-role/application",
+                "ashby",
+                "ashby_adapter",
+            ),
+            (
+                "oracle mixed case candidate experience path",
+                "https://example.fa.us2.oraclecloud.com/"
+                "hcmUI/CandidateExperience/en/sites/CX/job/123",
+                "oracle_cloud_hcm",
+                "oracle_cloud_hcm_adapter",
+            ),
+            (
+                "unknown generic jobs page",
+                "https://example.com/jobs/123",
+                "unknown",
+                "unknown_adapter",
+            ),
+            (
+                "unknown missing host",
+                "",
+                "unknown",
+                "unknown_adapter",
+            ),
+        ]
+
+        for name, url, expected_provider, expected_adapter in cases:
+            with self.subTest(name=name):
+                result = detect_provider(url)
+                adapter = get_adapter(result.adapter)
+
+                self.assertEqual(result.provider, expected_provider)
+                self.assertEqual(result.adapter, expected_adapter)
+                self.assertEqual(adapter.provider, expected_provider)
+                self.assertEqual(adapter.adapter, expected_adapter)
+
     def test_detects_workday_from_real_url(self) -> None:
         result = detect_provider(WORKDAY_URL)
 
