@@ -9,6 +9,7 @@
 - `ParserResult`: normalized end-to-end parser output for provider, adapter, reason, and minimal metadata.
 - `Adapter`: deterministic script for one ATS provider.
 - `AdapterResult`: non-browser adapter planning result for adapter status and next handling.
+- `planned`: AdapterResult status for a deterministic, non-executing provider preflight.
 - `Agent Fallback`: AI step used only for missing fields, unclear labels, or failed deterministic fills.
 - `MissingFieldReviewPlan`: Agent Fallback contract for fields that are missing, failed deterministic fill, or require a human Review Stop.
 - `Review Stop`: hard boundary before final submit. The system must stop for human review.
@@ -22,8 +23,8 @@ The first MVP focuses on the smallest useful slice:
 1. User provides one job URL.
 2. Parser detects the ATS provider.
 3. Parser extracts minimal metadata: title, company, location when available.
-4. System selects the matching adapter skeleton.
-5. Adapter reports whether deterministic steps exist or manual review is required.
+4. System selects the matching adapter.
+5. Adapter reports whether deterministic preflight exists or manual review is required.
 6. Agent checks missing or failed fields.
 7. Workflow stops before final submit.
 
