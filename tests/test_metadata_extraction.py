@@ -37,6 +37,18 @@ class MetadataExtractionTests(unittest.TestCase):
         self.assertEqual(result.company, "Bugcrowd")
         self.assertEqual(result.location, "Remote, USA")
 
+    def test_extracts_lever_metadata_from_saved_html(self) -> None:
+        result = parse_job_page(
+            "https://jobs.lever.co/example-ai/platform-engineering-intern",
+            _fixture("lever.html"),
+        )
+
+        self.assertEqual(result.provider, "lever")
+        self.assertEqual(result.adapter, "lever_adapter")
+        self.assertEqual(result.job_title, "Platform Engineering Intern")
+        self.assertEqual(result.company, "Example AI")
+        self.assertEqual(result.location, "New York, NY")
+
     def test_extracts_ashby_metadata_from_saved_html(self) -> None:
         result = parse_job_page(
             "https://jobs.ashbyhq.com/gen-digital/example/application",
