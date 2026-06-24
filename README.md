@@ -46,6 +46,27 @@ MissingFieldReviewPlan -> field_reviews + stop_for_human_review
 
 See `docs/AGENT_FALLBACK.md` and `tests/fixtures/missing_field_review_plan.json`.
 
+## Parser Coverage
+
+Current deterministic coverage:
+
+| ATS Provider | URL Detection | Metadata Fixture | Adapter Registry |
+| --- | --- | --- | --- |
+| Workday | Real URL, shard subdomain, no-scheme URL | `tests/fixtures/workday.html` | `workday_adapter` |
+| Greenhouse | `boards.greenhouse.io`, `job-boards.greenhouse.io` | `tests/fixtures/greenhouse.html` | `greenhouse_adapter` |
+| Lever | `jobs.lever.co`, `/apply`, custom jobs subdomain | Not covered yet | `lever_adapter` |
+| Ashby | `jobs.ashbyhq.com`, `/application` | `tests/fixtures/ashby.html` | `ashby_adapter` |
+| Oracle Cloud HCM | `oraclecloud.com` Candidate Experience path | `tests/fixtures/oracle_cloud_hcm.html` | `oracle_cloud_hcm_adapter` |
+| Unknown | Generic jobs URL, missing host | `tests/fixtures/unknown.html` | `unknown_adapter` |
+
+Fixture standards:
+
+- Use saved HTML only; tests must not fetch live network pages.
+- Keep fixtures small, curated, and checked into `tests/fixtures/`.
+- Assert public behavior through parser or CLI outputs.
+- Unknown or low-confidence state must stop for human review.
+- Do not add browser automation, form filling, or final submit behavior.
+
 Detect the ATS provider from one job URL:
 
 ```bash
