@@ -3,26 +3,23 @@ from __future__ import annotations
 from urllib.parse import urlparse
 
 from .metadata import extract_job_metadata
-from .models import ProviderMatch
+from .models import ParserResult, ProviderDetection
 
 
-def parse_job_page(url: str, html: str | None = None) -> ProviderMatch:
+def parse_job_page(url: str, html: str | None = None) -> ParserResult:
     provider = detect_provider(url)
     if provider.provider == "unknown":
-        return provider
+        return provider.to_result()
 
     metadata = extract_job_metadata(html)
-    return ProviderMatch(
-        provider=provider.provider,
-        adapter=provider.adapter,
-        reason=provider.reason,
+    return provider.to_result(
         job_title=metadata.job_title,
         company=metadata.company,
         location=metadata.location,
     )
 
 
-def detect_provider(url: str) -> ProviderMatch:
+def detect_provider(url: str) -> ProviderDetection:
     parsed = urlparse(_ensure_scheme(url.strip()))
     host = parsed.netloc.lower()
     path = parsed.path.lower()
@@ -58,8 +55,8 @@ def _ensure_scheme(url: str) -> str:
     return f"https://{url}"
 
 
-def _match(provider: str, adapter: str, reason: str) -> ProviderMatch:
-    return ProviderMatch(provider=provider, adapter=adapter, reason=reason)
+def _match(provider: str, adapter: str, reason: str) -> ProviderDetection:
+    return ProviderDetection(provider=provider, adapter=adapter, reason=reason)
 
 
 def _is_workday(host: str) -> bool:

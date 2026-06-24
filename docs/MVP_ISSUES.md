@@ -60,7 +60,13 @@ Labels: `type:feature`, `area:parser`, `priority:p1`
 
 Goal:
 
-Return a small normalized object from the parser.
+Make the parser output model explicit and stable.
+
+Scope:
+
+- Add a dedicated `ParserResult` model for end-to-end parser output.
+- Add a provider-only model for URL signature detection.
+- Keep CLI JSON keys stable.
 
 Example:
 
@@ -68,6 +74,7 @@ Example:
 {
   "provider": "workday",
   "adapter": "workday_adapter",
+  "reason": "host:myworkdayjobs.com",
   "job_title": "Software Engineer Intern",
   "company": "Example Corp",
   "location": "Remote"
@@ -76,12 +83,16 @@ Example:
 
 Verification:
 
-- Unit test each provider result.
+- Unit test provider-only output.
+- Unit test `ParserResult.to_dict()`.
+- Keep existing provider detection and metadata extraction tests passing.
 
 Out of scope:
 
 - Confidence scores.
 - Complex schema validator.
+- New metadata fields.
+- Live fetch/browser automation.
 
 ## 4. Create adapter skeletons
 

@@ -24,6 +24,13 @@ AI should not be the main browser executor. It should only help with uncertain s
 
 ## Current Slice
 
+The parser now has two explicit model layers:
+
+```text
+ProviderDetection: URL -> provider/adapter/reason
+ParserResult: provider/adapter/reason + job_title/company/location
+```
+
 Detect the ATS provider from one job URL:
 
 ```bash

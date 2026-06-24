@@ -23,7 +23,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
     if args.command == "parse":
-        html = Path(args.html_file).read_text(encoding="utf-8") if args.html_file else None
+        html = (
+            Path(args.html_file).read_text(encoding="utf-8")
+            if args.html_file
+            else None
+        )
         result = parse_job_page(args.url, html)
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
         return 0
