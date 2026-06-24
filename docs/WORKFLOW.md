@@ -4,6 +4,12 @@
 
 Keep GitHub as the source of truth for engineering progress.
 
+Minimum Necessary System:
+
+- Finish the smallest current-issue loop.
+- Do not add abstractions, modules, schemas, or docs for future possibilities.
+- Reuse existing files and vocabulary unless a new entity is required now.
+
 Notion can store long-term ideas, but daily execution should leave traces in GitHub:
 
 ```text
@@ -107,6 +113,7 @@ Reviewers should focus on:
 - Scope: the PR only does what the issue says.
 - Verification: tests, fixtures, or commands prove the behavior.
 - Safety: no final submit, no unintended browser automation, no live LLM call.
+- Necessity: new entities are required by this issue, not speculative.
 - Boundaries: parser, metadata, models, adapters, and agent contracts stay separate.
 - Handoff: future contributors can understand what changed from the PR alone.
 

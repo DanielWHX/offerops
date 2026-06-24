@@ -2,6 +2,14 @@
 
 This repository is built through small, auditable GitHub slices.
 
+## Prime Rule
+
+Minimum Necessary System.
+
+- Finish the smallest current-issue loop.
+- Do not add abstractions, modules, schemas, or docs for future possibilities.
+- Reuse existing files and vocabulary unless a new entity is required now.
+
 ## Communication
 
 - Keep updates short and concrete.
@@ -34,6 +42,7 @@ Reviewers should check only the highest-signal items:
 
 - The PR stays inside the linked issue scope.
 - The public behavior is verified through tests, fixtures, or a repeatable command.
+- New entities are necessary for this issue, not future speculation.
 - Safety boundaries are preserved.
 - The change uses existing project vocabulary and module boundaries.
 - Any remaining risk is written in the PR.
