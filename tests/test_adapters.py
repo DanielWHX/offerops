@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
 import json
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
+from offerops import cli
 from offerops.adapters import get_adapter, plan_adapter
 from offerops.adapters.ashby import AshbyAdapter
 from offerops.adapters.greenhouse import GreenhouseAdapter
@@ -110,6 +114,70 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(payload["provider"], "unknown")
         self.assertEqual(payload["adapter"], "unknown_adapter")
         self.assertEqual(payload["status"], "manual_review_required")
+
+    def test_cli_demo_outputs_live_planning_report_shape(self) -> None:
+        stdout = StringIO()
+        html = """
+        <script type="application/ld+json">
+          {
+            "@type": "JobPosting",
+            "title": "Security Engineering Intern",
+            "hiringOrganization": {"name": "Bugcrowd"},
+            "jobLocation": "Remote, USA"
+          }
+        </script>
+        """
+
+        with patch("offerops.cli._fetch_url_html", return_value=html) as fetch:
+            with redirect_stdout(stdout):
+                exit_code = cli.main(
+                    [
+                        "demo",
+                        "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582",
+                    ]
+                )
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        fetch.assert_called_once_with(
+            "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582",
+            15.0,
+        )
+        self.assertEqual(payload["parser_result"]["provider"], "greenhouse")
+        self.assertEqual(
+            payload["parser_result"]["job_title"],
+            "Security Engineering Intern",
+        )
+        self.assertEqual(payload["adapter_result"]["status"], "not_implemented")
+        self.assertEqual(payload["safety"]["browser_automation"], "not_used")
+        self.assertEqual(payload["safety"]["final_submit"], "not_allowed")
+
+    def test_cli_demo_outputs_unknown_manual_review_report(self) -> None:
+        stdout = StringIO()
+
+        with patch(
+            "offerops.cli._fetch_url_html",
+            return_value="<title>Example Jobs</title>",
+        ):
+            with redirect_stdout(stdout):
+                exit_code = cli.main(["demo", "https://example.com/jobs/123"])
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["parser_result"]["provider"], "unknown")
+        self.assertEqual(payload["adapter_result"]["status"], "manual_review_required")
+
+    def test_cli_demo_reports_fetch_failure(self) -> None:
+        stderr = StringIO()
+
+        with patch("offerops.cli._fetch_url_html", side_effect=OSError("network down")):
+            with redirect_stderr(stderr):
+                exit_code = cli.main(["demo", "https://example.com/jobs/123"])
+
+        payload = json.loads(stderr.getvalue())
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(payload["error"], "fetch_failed")
+        self.assertEqual(payload["url"], "https://example.com/jobs/123")
 
 
 if __name__ == "__main__":

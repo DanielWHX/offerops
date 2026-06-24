@@ -104,6 +104,15 @@ print(plan_adapter(result).to_dict())
 PY
 ```
 
+Run a live planning demo against one real job page:
+
+```bash
+PYTHONPATH=src python3 -m offerops demo "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582"
+```
+
+The demo uses one HTTP GET, prints parser and adapter JSON, and never runs
+browser automation, form filling, account creation, LLM calls, or final submit.
+
 Run tests:
 
 ```bash
