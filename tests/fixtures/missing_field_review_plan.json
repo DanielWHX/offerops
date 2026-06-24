@@ -1,0 +1,29 @@
+{
+  "provider": "workday",
+  "adapter": "workday_adapter",
+  "field_reviews": [
+    {
+      "field_name": "phone_country_code",
+      "label": "Country Phone Code",
+      "issue": "missing",
+      "required": true,
+      "attempted_value": null,
+      "agent_review_action": "infer_from_context",
+      "details": "No deterministic profile value matched the Country Phone Code field."
+    },
+    {
+      "field_name": "resume_upload",
+      "label": "Resume",
+      "issue": "deterministic_fill_failed",
+      "required": true,
+      "attempted_value": "resume.pdf",
+      "agent_review_action": "inspect_failed_fill",
+      "details": "Deterministic upload did not confirm that the resume field accepted the file."
+    }
+  ],
+  "stop_for_human_review": true,
+  "human_review_reasons": [
+    "required_field_missing",
+    "deterministic_fill_failed"
+  ]
+}

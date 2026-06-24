@@ -10,6 +10,7 @@
 - `Adapter`: deterministic script for one ATS provider.
 - `AdapterResult`: non-browser adapter planning result for adapter status and next handling.
 - `Agent Fallback`: AI step used only for missing fields, unclear labels, or failed deterministic fills.
+- `MissingFieldReviewPlan`: Agent Fallback contract for fields that are missing, failed deterministic fill, or require a human Review Stop.
 - `Review Stop`: hard boundary before final submit. The system must stop for human review.
 
 ## MVP Scope
