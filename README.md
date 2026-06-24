@@ -31,10 +31,11 @@ ProviderDetection: URL -> provider/adapter/reason
 ParserResult: provider/adapter/reason + job_title/company/location
 ```
 
-The adapter layer is also registered but non-executing:
+The adapter layer is registered and non-executing:
 
 ```text
-Known provider adapter -> status=not_implemented
+Greenhouse application HTML -> status=planned
+Other known provider adapter -> status=not_implemented
 Unknown adapter -> status=manual_review_required
 ```
 

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from offerops.models import ParserResult
 
-AdapterStatus = Literal["not_implemented", "manual_review_required"]
+AdapterStatus = Literal["planned", "not_implemented", "manual_review_required"]
 
 
 @dataclass(frozen=True)
@@ -20,14 +21,18 @@ class AdapterResult:
     adapter: str
     status: AdapterStatus
     message: str
+    details: Mapping[str, Any] | None = None
 
-    def to_dict(self) -> dict[str, str]:
-        return {
+    def to_dict(self) -> dict[str, object]:
+        payload: dict[str, object] = {
             "provider": self.provider,
             "adapter": self.adapter,
             "status": self.status,
             "message": self.message,
         }
+        if self.details:
+            payload["details"] = dict(self.details)
+        return payload
 
 
 class ATSAdapter(Protocol):

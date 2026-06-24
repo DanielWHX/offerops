@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 import json
+from pathlib import Path
 import subprocess
 import sys
 import unittest
@@ -17,7 +18,9 @@ from offerops.adapters.oracle_cloud_hcm import OracleCloudHCMAdapter
 from offerops.adapters.unknown import UnknownAdapter
 from offerops.adapters.workday import WorkdayAdapter
 from offerops.models import ParserResult
-from offerops.parser import detect_provider
+from offerops.parser import detect_provider, parse_job_page
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 class AdapterRegistryTests(unittest.TestCase):
@@ -76,6 +79,28 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(adapter_result.provider, "unknown")
         self.assertEqual(adapter_result.adapter, "unknown_adapter")
         self.assertEqual(adapter_result.status, "manual_review_required")
+
+    def test_greenhouse_adapter_preflights_application_fields(self) -> None:
+        html = _fixture("greenhouse_application.html")
+        parser_result = parse_job_page(
+            "https://job-boards.greenhouse.io/bugcrowd/jobs/8016582",
+            html,
+        )
+
+        adapter_result = plan_adapter(parser_result, html)
+        payload = adapter_result.to_dict()
+
+        self.assertEqual(payload["provider"], "greenhouse")
+        self.assertEqual(payload["adapter"], "greenhouse_adapter")
+        self.assertEqual(payload["status"], "planned")
+        details = payload["details"]
+        self.assertIsInstance(details, dict)
+        self.assertEqual(details["field_count"], 5)
+        self.assertEqual(
+            [field["field_key"] for field in details["fields"]],
+            ["first_name", "last_name", "email", "phone", "resume"],
+        )
+        self.assertEqual(details["review_reasons"], ["final_submit_boundary"])
 
     def test_cli_plan_outputs_known_provider_adapter_result(self) -> None:
         completed = subprocess.run(
@@ -178,6 +203,10 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertEqual(payload["error"], "fetch_failed")
         self.assertEqual(payload["url"], "https://example.com/jobs/123")
+
+
+def _fixture(name: str) -> str:
+    return (FIXTURES / name).read_text(encoding="utf-8")
 
 
 if __name__ == "__main__":
