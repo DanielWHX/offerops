@@ -5,6 +5,7 @@ deterministic adapter could not resolve or could not fill safely.
 
 This slice defines the contract only. It does not call an LLM, drive a browser,
 fill a form, or continue to final submit.
+Actual Agent response/output is not implemented in this issue.
 
 ## Input Shape
 
