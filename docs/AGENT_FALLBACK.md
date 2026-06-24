@@ -23,9 +23,9 @@ Each `field_reviews` item contains:
 - `attempted_value`: value the deterministic path tried, or `null`.
 - `details`: short reason the deterministic path could not complete the field.
 
-## Output Shape
+## Review Plan Fields
 
-The review plan also records the expected Agent handling:
+The same deterministic handoff plan records suggested review handling:
 
 - `agent_review_action`: `infer_from_context`, `inspect_failed_fill`, or `ask_human`.
 - `stop_for_human_review`: whether the workflow must stop for human review.
