@@ -1,0 +1,10 @@
+{
+  "first_name": "Ada",
+  "last_name": "Lovelace",
+  "preferred_first_name": "Ada",
+  "email": "ada@example.test",
+  "phone": "4155550100",
+  "location_city": "San Francisco, CA",
+  "resume": "fake_resume.txt",
+  "cover_letter": "fake_cover_letter.txt"
+}

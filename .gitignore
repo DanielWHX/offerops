@@ -1,5 +1,6 @@
 # Local application records and generated outputs
 job_application_ledger.csv
+artifacts/
 output/
 tmp/
 
