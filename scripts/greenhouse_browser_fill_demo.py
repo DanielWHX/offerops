@@ -45,6 +45,9 @@ EDUCATION_FIELDS = {
     "school": "school--0",
     "degree": "degree--0",
 }
+FINAL_REPORT_FILLED_STATUSES = {"filled", "attached", "filled_manually"}
+FINAL_REPORT_MISSING_PROFILE_STATUSES = {"missing_profile_value", "missing_file"}
+FINAL_REPORT_IGNORED_STATUSES = {"not_present"}
 DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 
@@ -87,10 +90,21 @@ def main() -> int:
             )
             file_result = fill_file_fields(page, profile["files"])
             text_result = fill_text_fields(page, profile["text"])
+            final_report = build_final_report(
+                [
+                    text_result,
+                    file_result,
+                    dropdown_result,
+                    education_result,
+                    custom_text_result,
+                ],
+                guard_result,
+            )
             page.screenshot(path=str(screenshot_path), full_page=True)
 
             result = {
                 "url": args.url,
+                "final_report": final_report,
                 "application_open": application_open_result,
                 "text_fields": text_result,
                 "custom_text_fields": custom_text_result,
@@ -298,6 +312,42 @@ def string_value(payload: dict[str, Any], key: str) -> str:
 
 def compact_strings(payload: dict[str, str]) -> dict[str, str]:
     return {key: value for key, value in payload.items() if value}
+
+
+def build_final_report(
+    field_groups: list[list[dict[str, Any]]], submit_guard: dict[str, Any]
+) -> dict[str, Any]:
+    report: dict[str, Any] = {
+        "filled": [],
+        "missing_profile": [],
+        "needs_review": [],
+        "final_submit_blocked": submit_guard.get("final_submit")
+        == "blocked_not_clicked",
+    }
+    for field_group in field_groups:
+        for field in field_group:
+            field_key = str(field.get("field_key", "")).strip()
+            if not field_key:
+                continue
+
+            status = field.get("status")
+            if status in FINAL_REPORT_IGNORED_STATUSES:
+                continue
+            if status in FINAL_REPORT_MISSING_PROFILE_STATUSES:
+                report["missing_profile"].append(field_key)
+                continue
+            if status in FINAL_REPORT_FILLED_STATUSES and field_is_verified(field):
+                report["filled"].append(field_key)
+                continue
+            report["needs_review"].append(field_key)
+    return report
+
+
+def field_is_verified(field: dict[str, Any]) -> bool:
+    for key in ("verified_value_matches", "verified_file_visible"):
+        if key in field and field[key] is False:
+            return False
+    return True
 
 
 def infer_phone_country(phone: str) -> str:

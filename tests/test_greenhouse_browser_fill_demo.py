@@ -125,6 +125,73 @@ class GreenhouseBrowserFillDemoTests(unittest.TestCase):
 
         self.assertEqual(profile["custom_text"]["current_gpa"], "3.68")
 
+    def test_final_report_groups_observable_outcomes(self) -> None:
+        script = _load_script_module()
+
+        report = script.build_final_report(
+            [
+                [
+                    {
+                        "field_key": "first_name",
+                        "status": "filled",
+                        "verified_value_matches": True,
+                    },
+                    {
+                        "field_key": "linkedin_profile",
+                        "status": "not_found",
+                        "verified_value_matches": False,
+                    },
+                ],
+                [
+                    {
+                        "field_key": "resume",
+                        "status": "attached",
+                        "verified_file_visible": True,
+                    },
+                    {"field_key": "cover_letter", "status": "missing_file"},
+                ],
+                [
+                    {
+                        "field_key": "school",
+                        "status": "needs_review",
+                        "verified_value_matches": False,
+                    },
+                    {
+                        "field_key": "degree",
+                        "status": "filled",
+                        "verified_value_matches": True,
+                    },
+                    {"field_key": "optional_field", "status": "not_present"},
+                ],
+            ],
+            {"final_submit": "blocked_not_clicked"},
+        )
+
+        self.assertEqual(report["filled"], ["first_name", "resume", "degree"])
+        self.assertEqual(report["missing_profile"], ["cover_letter"])
+        self.assertEqual(report["needs_review"], ["linkedin_profile", "school"])
+        self.assertTrue(report["final_submit_blocked"])
+
+    def test_final_report_requires_verification_for_filled_status(self) -> None:
+        script = _load_script_module()
+
+        report = script.build_final_report(
+            [
+                [
+                    {
+                        "field_key": "location_city",
+                        "status": "filled",
+                        "verified_value_matches": False,
+                    }
+                ]
+            ],
+            {"final_submit": "not_blocked"},
+        )
+
+        self.assertEqual(report["filled"], [])
+        self.assertEqual(report["needs_review"], ["location_city"])
+        self.assertFalse(report["final_submit_blocked"])
+
     def test_location_search_terms_try_city_before_full_location(self) -> None:
         script = _load_script_module()
 
