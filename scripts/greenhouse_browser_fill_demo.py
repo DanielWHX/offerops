@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -72,11 +73,11 @@ def main() -> int:
             application_open_result = open_application_form(page)
             wait_for_greenhouse_form(page)
 
-            file_result = fill_file_fields(page, profile["files"])
             dropdown_result = fill_dropdown_fields(page, profile.get("dropdowns", {}))
             custom_text_result = fill_custom_text_fields(
                 page, profile.get("custom_text", {})
             )
+            file_result = fill_file_fields(page, profile["files"])
             text_result = fill_text_fields(page, profile["text"])
             guard_result = install_submit_guard(page)
             page.screenshot(path=str(screenshot_path), full_page=True)
@@ -232,7 +233,8 @@ def load_nested_profile(payload: dict[str, Any], path: Path) -> dict[str, dict[s
             or string_value(default_answers, "linkedin"),
             "desired_salary": string_value(app_compensation, "default_answer")
             or string_value(default_answers, "compensation"),
-            "current_gpa": string_value(payload, "gpa"),
+            "current_gpa": string_value(payload, "gpa")
+            or os.environ.get("OFFEROPS_GPA", "").strip(),
             "work_hours": string_value(app_availability, "work_hours")
             or string_value(app_availability, "able_to_work_hours")
             or string_value(app_availability, "able_to_relocate_schedule"),
@@ -282,7 +284,7 @@ def compact_strings(payload: dict[str, str]) -> dict[str, str]:
 
 
 def infer_phone_country(phone: str) -> str:
-    digits = "".join(character for character in phone if character.isdigit())
+    digits = digits_only(phone)
     if phone.strip().startswith("+1") or len(digits) == 10:
         return "United States"
     return ""
@@ -386,6 +388,9 @@ def fill_labeled_input(page: Any, label: str, value: str) -> str:
         return "not_found"
 
     target.fill(value)
+    target.dispatch_event("input")
+    target.dispatch_event("change")
+    target.evaluate("element => element.blur()")
     return "filled"
 
 
@@ -454,12 +459,81 @@ def fill_dropdown_fields(page: Any, profile: dict[str, str]) -> list[dict[str, A
 
 
 def fill_location(page: Any, value: str) -> str:
-    status = select_react_combobox(page, "candidate-location", value)
-    if status != "filled":
-        return status
-    if field_value_matches(page, "location_city", TEXT_FIELD_LABELS["location_city"], value):
+    if select_location_autocomplete(page, value):
         return "filled"
     return "needs_review"
+
+
+def select_location_autocomplete(page: Any, value: str) -> bool:
+    input_locator = page.locator("#candidate-location")
+    if input_locator.count() == 0:
+        return False
+
+    for term in location_search_terms(value):
+        input_locator.first.scroll_into_view_if_needed()
+        input_locator.first.click(force=True)
+        input_locator.first.fill(term)
+        page.wait_for_timeout(1500)
+        if click_first_visible_option(page):
+            page.wait_for_timeout(500)
+            page.keyboard.press("Tab")
+            page.wait_for_timeout(300)
+            if location_field_is_valid(page, value):
+                return True
+
+    return False
+
+
+def location_search_terms(value: str) -> list[str]:
+    terms = [value]
+    city = value.split(",", 1)[0].strip()
+    if city and city not in terms:
+        terms.insert(0, city)
+    return terms
+
+
+def click_first_visible_option(page: Any) -> bool:
+    return bool(
+        page.locator("body").evaluate(
+            """() => {
+              const visible = element => {
+                const rect = element.getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                return rect.width > 0 && rect.height > 0 &&
+                  style.visibility !== 'hidden' && style.display !== 'none';
+              };
+              const option = Array.from(document.querySelectorAll('[role="option"], .select__option'))
+                .filter(visible)[0];
+              if (!option) return false;
+              option.click();
+              return true;
+            }"""
+        )
+    )
+
+
+def location_field_is_valid(page: Any, expected: str) -> bool:
+    city = expected.split(",", 1)[0].strip().lower()
+    if not city:
+        return False
+    return bool(
+        page.locator("body").evaluate(
+            """(body, city) => {
+              const input = document.getElementById('candidate-location');
+              if (!input) return false;
+              const field = input.closest('.field-wrapper');
+              const text = ((field && (field.innerText || field.textContent)) || '')
+                .replace(/\\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+              const error = document.getElementById('candidate-location-error');
+              const errorVisible = error && error.offsetParent !== null &&
+                /please enter your location/i.test(error.innerText || error.textContent || '');
+              return text.includes(city) && !errorVisible;
+            }""",
+            city,
+        )
+    )
 
 
 def select_react_combobox(page: Any, field_id: str, value: str) -> str:
@@ -569,7 +643,7 @@ def element_by_visible_label(page: Any, label: str, selector: str) -> Any:
 
 def field_value_matches(page: Any, field_key: str, label: str, expected: str) -> bool:
     if field_key == "location_city":
-        return react_combobox_value_matches(page, "candidate-location", expected)
+        return location_field_is_valid(page, expected)
 
     locator = page.locator(f'input[aria-label="{label}"], textarea[aria-label="{label}"]')
     if locator.count() == 0:
@@ -577,7 +651,13 @@ def field_value_matches(page: Any, field_key: str, label: str, expected: str) ->
     target = first_visible(locator)
     if target is None:
         return False
+    if field_key == "phone":
+        return digits_only(target.input_value()).endswith(digits_only(expected))
     return target.input_value() == expected
+
+
+def digits_only(value: str) -> str:
+    return "".join(character for character in value if character.isdigit())
 
 
 def fill_file_fields(page: Any, files: dict[str, str]) -> list[dict[str, Any]]:

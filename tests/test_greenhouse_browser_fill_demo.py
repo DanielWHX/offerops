@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -88,6 +89,48 @@ class GreenhouseBrowserFillDemoTests(unittest.TestCase):
         self.assertEqual(profile["dropdowns"]["race"], "I don't wish to answer")
         self.assertEqual(profile["dropdowns"]["disability_status"], "I do not want to answer")
         self.assertTrue(profile["files"]["resume"].endswith("resume.pdf"))
+
+    def test_load_profile_accepts_runtime_gpa_override(self) -> None:
+        script = _load_script_module()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_path = root / "profile.json"
+            profile_path.write_text(
+                json.dumps(
+                    {
+                        "identity": {
+                            "first_name": "Grace",
+                            "last_name": "Hopper",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            previous = os.environ.get("OFFEROPS_GPA")
+            os.environ["OFFEROPS_GPA"] = "3.68"
+            try:
+                profile = script.load_profile(profile_path)
+            finally:
+                if previous is None:
+                    os.environ.pop("OFFEROPS_GPA", None)
+                else:
+                    os.environ["OFFEROPS_GPA"] = previous
+
+        self.assertEqual(profile["custom_text"]["current_gpa"], "3.68")
+
+    def test_location_search_terms_try_city_before_full_location(self) -> None:
+        script = _load_script_module()
+
+        self.assertEqual(
+            script.location_search_terms("Champaign, Illinois, United States"),
+            ["Champaign", "Champaign, Illinois, United States"],
+        )
+
+    def test_digits_only_normalizes_phone_formatting(self) -> None:
+        script = _load_script_module()
+
+        self.assertEqual(script.digits_only("+1 (415) 555-0100"), "14155550100")
 
 
 if __name__ == "__main__":
