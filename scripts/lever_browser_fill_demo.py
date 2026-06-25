@@ -19,6 +19,14 @@ TEXT_FIELD_SELECTORS = {
 LINK_FIELD_SELECTORS = {
     "linkedin_profile": 'input[name="urls[LinkedIn]"]',
 }
+HANDLED_REQUIRED_LABELS = {
+    "current location",
+    "email",
+    "full name",
+    "linkedin url",
+    "phone",
+    "resume/cv",
+}
 FILLED_STATUSES = {"filled", "attached"}
 MISSING_PROFILE_STATUSES = {"missing_profile_value", "missing_file"}
 
@@ -55,8 +63,9 @@ def main() -> int:
             text_result = fill_text_fields(page, profile["text"])
             link_result = fill_link_fields(page, profile.get("custom_text", {}))
             file_result = fill_file_fields(page, profile["files"])
+            review_result = collect_required_review_fields(page)
             final_report = build_final_report(
-                [text_result, link_result, file_result], guard_result
+                [text_result, link_result, file_result, review_result], guard_result
             )
             page.screenshot(path=str(screenshot_path), full_page=True)
 
@@ -66,6 +75,7 @@ def main() -> int:
                 "text_fields": text_result,
                 "link_fields": link_result,
                 "file_fields": file_result,
+                "review_fields": review_result,
                 "submit_guard": guard_result,
                 "screenshot": str(screenshot_path),
                 "safety": {
@@ -247,6 +257,61 @@ def file_visible(page: Any, filename: str) -> bool:
             filename,
         )
     )
+
+
+def collect_required_review_fields(page: Any) -> list[dict[str, Any]]:
+    labels = page.locator("body").evaluate(
+        """() => {
+          const visible = element => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            return rect.width > 0 && rect.height > 0 &&
+              style.visibility !== 'hidden' && style.display !== 'none';
+          };
+          const clean = text => (text || '')
+            .replace(/\\s+/g, ' ')
+            .trim();
+          return Array.from(document.querySelectorAll('label'))
+            .filter(visible)
+            .map(label => clean(label.innerText || label.textContent))
+            .filter(text => text.includes('*'));
+        }"""
+    )
+    return required_review_fields_from_labels(labels)
+
+
+def required_review_fields_from_labels(labels: list[str]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for label in labels:
+        normalized = normalize_required_label(label)
+        if not normalized:
+            continue
+        lookup_key = normalized.lower()
+        if lookup_key in HANDLED_REQUIRED_LABELS or lookup_key in seen:
+            continue
+        seen.add(lookup_key)
+        results.append(
+            {
+                "field_key": f"required:{slugify_label(normalized)}",
+                "label": normalized,
+                "status": "needs_review",
+                "value_present": False,
+            }
+        )
+    return results
+
+
+def normalize_required_label(label: str) -> str:
+    return " ".join(label.replace("*", " ").split())
+
+
+def slugify_label(label: str) -> str:
+    slug = "".join(
+        character.lower() if character.isalnum() else "_"
+        for character in label
+    )
+    return "_".join(part for part in slug.split("_") if part)[:80]
 
 
 def build_final_report(

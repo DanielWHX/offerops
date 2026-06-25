@@ -64,6 +64,44 @@ class LeverBrowserFillDemoTests(unittest.TestCase):
         self.assertEqual(report["needs_review"], ["linkedin_profile"])
         self.assertTrue(report["final_submit_blocked"])
 
+    def test_required_review_fields_ignore_handled_labels(self) -> None:
+        script = _load_script_module()
+
+        fields = script.required_review_fields_from_labels(
+            [
+                "Full name *",
+                "Email *",
+                "Phone *",
+                "Are you legally authorized to work in the U.S.? *",
+                "Are you legally authorized to work in the U.S.? *",
+            ]
+        )
+
+        self.assertEqual(
+            fields,
+            [
+                {
+                    "field_key": "required:are_you_legally_authorized_to_work_in_the_u_s",
+                    "label": "Are you legally authorized to work in the U.S.?",
+                    "status": "needs_review",
+                    "value_present": False,
+                }
+            ],
+        )
+
+    def test_final_report_includes_required_review_fields(self) -> None:
+        script = _load_script_module()
+
+        review_fields = script.required_review_fields_from_labels(
+            ["I certify and agree *"]
+        )
+        report = script.build_final_report(
+            [review_fields],
+            {"final_submit": "blocked_not_clicked"},
+        )
+
+        self.assertEqual(report["needs_review"], ["required:i_certify_and_agree"])
+
     def test_final_report_keeps_unverified_filled_fields_in_review(self) -> None:
         script = _load_script_module()
 
