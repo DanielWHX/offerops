@@ -41,6 +41,10 @@ DROPDOWN_FIELDS = {
     "veteran_status": "veteran_status",
     "disability_status": "disability_status",
 }
+EDUCATION_FIELDS = {
+    "school": "school--0",
+    "degree": "degree--0",
+}
 DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 
@@ -72,14 +76,17 @@ def main() -> int:
             page.goto(args.url, wait_until="domcontentloaded")
             application_open_result = open_application_form(page)
             wait_for_greenhouse_form(page)
+            guard_result = install_submit_guard(page)
 
             dropdown_result = fill_dropdown_fields(page, profile.get("dropdowns", {}))
+            education_result = fill_education_fields(
+                page, profile.get("education", {})
+            )
             custom_text_result = fill_custom_text_fields(
                 page, profile.get("custom_text", {})
             )
             file_result = fill_file_fields(page, profile["files"])
             text_result = fill_text_fields(page, profile["text"])
-            guard_result = install_submit_guard(page)
             page.screenshot(path=str(screenshot_path), full_page=True)
 
             result = {
@@ -88,6 +95,7 @@ def main() -> int:
                 "text_fields": text_result,
                 "custom_text_fields": custom_text_result,
                 "dropdown_fields": dropdown_result,
+                "education_fields": education_result,
                 "file_fields": file_result,
                 "submit_guard": guard_result,
                 "screenshot": str(screenshot_path),
@@ -193,6 +201,7 @@ def load_flat_profile(payload: dict[str, Any], path: Path) -> dict[str, dict[str
         "files": file_profile,
         "custom_text": {},
         "dropdowns": {},
+        "education": {},
     }
 
 
@@ -207,6 +216,7 @@ def load_nested_profile(payload: dict[str, Any], path: Path) -> dict[str, dict[s
     app_availability = dict_value(application_answers, "availability")
     app_certification = dict_value(application_answers, "certification")
     app_self_id = dict_value(application_answers, "self_identification")
+    education = dict_value(payload, "education")
 
     first_name = string_value(identity, "first_name")
     text_profile = compact_strings(
@@ -260,12 +270,19 @@ def load_nested_profile(payload: dict[str, Any], path: Path) -> dict[str, dict[s
             ),
         }
     )
+    education_profile = compact_strings(
+        {
+            "school": string_value(education, "current_school"),
+            "degree": string_value(education, "current_degree"),
+        }
+    )
 
     return {
         "text": text_profile,
         "files": file_profile,
         "custom_text": custom_text,
         "dropdowns": dropdowns,
+        "education": education_profile,
     }
 
 
@@ -456,6 +473,165 @@ def fill_dropdown_fields(page: Any, profile: dict[str, str]) -> list[dict[str, A
             }
         )
     return results
+
+
+def fill_education_fields(page: Any, profile: dict[str, str]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for field_key, field_id in EDUCATION_FIELDS.items():
+        if not element_id_is_visible(page, field_id):
+            results.append(
+                {
+                    "field_key": field_key,
+                    "status": "not_present",
+                    "value_present": False,
+                }
+            )
+            continue
+
+        value = profile.get(field_key)
+        if not value:
+            results.append(
+                {
+                    "field_key": field_key,
+                    "status": "missing_profile_value",
+                    "value_present": False,
+                }
+            )
+            continue
+
+        status = select_education_combobox(page, field_id, field_key, value)
+        results.append(
+            {
+                "field_key": field_key,
+                "status": status,
+                "value_present": True,
+                "verified_value_matches": education_value_matches(
+                    page, field_id, field_key, value
+                ),
+            }
+        )
+    return results
+
+
+def element_id_is_visible(page: Any, field_id: str) -> bool:
+    locator = page.locator(f"#{field_id}")
+    return locator.count() > 0 and locator.first.is_visible()
+
+
+def select_education_combobox(
+    page: Any, field_id: str, field_key: str, value: str
+) -> str:
+    input_locator = page.locator(f"#{field_id}")
+    if input_locator.count() == 0:
+        return "not_present"
+
+    for term in education_search_terms(field_key, value):
+        input_locator.first.scroll_into_view_if_needed()
+        input_locator.first.click(force=True)
+        input_locator.first.fill(term)
+        page.wait_for_timeout(2500 if field_key == "school" else 1000)
+        if not click_visible_option_matching(
+            page, term
+        ) and not click_first_visible_option(page):
+            page.keyboard.press("ArrowDown")
+            page.wait_for_timeout(200)
+            page.keyboard.press("Enter")
+        page.wait_for_timeout(500)
+        page.keyboard.press("Tab")
+        page.wait_for_timeout(300)
+        if education_value_matches(page, field_id, field_key, value):
+            return "filled"
+
+    return "needs_review"
+
+
+def education_search_terms(field_key: str, value: str) -> list[str]:
+    if field_key == "school":
+        return school_search_terms(value)
+    if field_key == "degree":
+        lowered = value.lower()
+        if "master" in lowered:
+            return ["Master", value]
+        if "bachelor" in lowered:
+            return ["Bachelor", value]
+    return [value]
+
+
+def school_search_terms(value: str) -> list[str]:
+    terms = [value]
+    normalized = value.replace("-", " ")
+    if normalized != value:
+        terms.append(normalized)
+
+    lowered = normalized.lower()
+    if (
+        "university of illinois" in lowered
+        and "urbana" in lowered
+        and "champaign" in lowered
+    ):
+        terms.extend(
+            [
+                "University of Illinois at Urbana-Champaign",
+                "University of Illinois at Urbana Champaign",
+                "Illinois Urbana",
+            ]
+        )
+    return unique_strings(terms)
+
+
+def education_value_matches(
+    page: Any, field_id: str, field_key: str, expected: str
+) -> bool:
+    tokens = education_match_tokens(field_key, expected)
+    if not tokens:
+        return False
+    return bool(
+        page.locator("body").evaluate(
+            """(body, args) => {
+              const {fieldId, tokens} = args;
+              const input = document.getElementById(fieldId);
+              if (!input) return false;
+              const field = input.closest('.field-wrapper') ||
+                input.closest('.select__container') ||
+                input.closest('.select-shell');
+              const text = ((field && (field.innerText || field.textContent)) || '')
+                .replace(/\\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+              return tokens.some(token => text.includes(token));
+            }""",
+            {"fieldId": field_id, "tokens": tokens},
+        )
+    )
+
+
+def education_match_tokens(field_key: str, value: str) -> list[str]:
+    lowered = value.lower().strip()
+    if not lowered:
+        return []
+    if field_key == "school":
+        tokens: list[str] = []
+        for term in school_search_terms(value):
+            tokens.extend(normalized_tokens(term))
+        return unique_strings(tokens)
+    if field_key == "degree":
+        if "master" in lowered:
+            return ["master"]
+        if "bachelor" in lowered:
+            return ["bachelor"]
+    return normalized_tokens(value)
+
+
+def unique_strings(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        normalized = value.strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        result.append(normalized)
+    return result
 
 
 def fill_location(page: Any, value: str) -> str:

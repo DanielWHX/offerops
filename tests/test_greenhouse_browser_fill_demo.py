@@ -54,6 +54,10 @@ class GreenhouseBrowserFillDemoTests(unittest.TestCase):
                             "linkedin": "https://linkedin.example/grace",
                         },
                         "resume": {"resume_path": str(resume)},
+                        "education": {
+                            "current_school": "Example University",
+                            "current_degree": "Master of Science",
+                        },
                         "work_authorization": {
                             "future_sponsorship_required": "No sponsorship needed"
                         },
@@ -88,6 +92,8 @@ class GreenhouseBrowserFillDemoTests(unittest.TestCase):
         self.assertEqual(profile["dropdowns"]["gender"], "Decline To Self Identify")
         self.assertEqual(profile["dropdowns"]["race"], "I don't wish to answer")
         self.assertEqual(profile["dropdowns"]["disability_status"], "I do not want to answer")
+        self.assertEqual(profile["education"]["school"], "Example University")
+        self.assertEqual(profile["education"]["degree"], "Master of Science")
         self.assertTrue(profile["files"]["resume"].endswith("resume.pdf"))
 
     def test_load_profile_accepts_runtime_gpa_override(self) -> None:
@@ -125,6 +131,59 @@ class GreenhouseBrowserFillDemoTests(unittest.TestCase):
         self.assertEqual(
             script.location_search_terms("Champaign, Illinois, United States"),
             ["Champaign", "Champaign, Illinois, United States"],
+        )
+
+    def test_education_degree_search_uses_small_degree_token(self) -> None:
+        script = _load_script_module()
+
+        self.assertEqual(
+            script.education_search_terms("degree", "Master of Science"),
+            ["Master", "Master of Science"],
+        )
+
+    def test_education_school_search_adds_greenhouse_variant(self) -> None:
+        script = _load_script_module()
+
+        self.assertIn(
+            "University of Illinois at Urbana-Champaign",
+            script.education_search_terms(
+                "school", "University of Illinois Urbana-Champaign"
+            ),
+        )
+        self.assertIn(
+            "university of illinois at urbana-champaign",
+            script.education_match_tokens(
+                "school", "University of Illinois Urbana-Champaign"
+            ),
+        )
+
+    def test_fill_education_fields_reports_absent_and_missing_values(self) -> None:
+        script = _load_script_module()
+        original_visible = script.element_id_is_visible
+
+        try:
+            script.element_id_is_visible = (
+                lambda page, field_id: field_id == "school--0"
+            )
+
+            result = script.fill_education_fields(object(), {})
+        finally:
+            script.element_id_is_visible = original_visible
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "field_key": "school",
+                    "status": "missing_profile_value",
+                    "value_present": False,
+                },
+                {
+                    "field_key": "degree",
+                    "status": "not_present",
+                    "value_present": False,
+                },
+            ],
         )
 
     def test_digits_only_normalizes_phone_formatting(self) -> None:
