@@ -72,6 +72,9 @@ class LeverBrowserFillDemoTests(unittest.TestCase):
                 "Full name *",
                 "Email *",
                 "Phone *",
+                "Current location *",
+                "Current company",
+                "Twitter URL",
                 "Are you legally authorized to work in the U.S.? *",
                 "Are you legally authorized to work in the U.S.? *",
             ]
@@ -86,6 +89,28 @@ class LeverBrowserFillDemoTests(unittest.TestCase):
                     "status": "needs_review",
                     "value_present": False,
                 }
+            ],
+        )
+
+    def test_required_review_fields_accept_visible_text_lines(self) -> None:
+        script = _load_script_module()
+
+        fields = script.required_review_fields_from_labels(
+            [
+                "First Name *",
+                "Middle Name *",
+                "Last Name *",
+                "Address Line 1 *",
+            ]
+        )
+
+        self.assertEqual(
+            [field["field_key"] for field in fields],
+            [
+                "required:first_name",
+                "required:middle_name",
+                "required:last_name",
+                "required:address_line_1",
             ],
         )
 

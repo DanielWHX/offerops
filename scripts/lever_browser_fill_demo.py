@@ -27,6 +27,14 @@ HANDLED_REQUIRED_LABELS = {
     "phone",
     "resume/cv",
 }
+IGNORED_EMPTY_CONTROL_LABELS = {
+    "current company",
+    "field ai",
+    "fieldai has my consent to contact me about future job opportunities.",
+    "github url",
+    "portfolio url",
+    "twitter url",
+}
 FILLED_STATUSES = {"filled", "attached"}
 MISSING_PROFILE_STATUSES = {"missing_profile_value", "missing_file"}
 
@@ -277,7 +285,77 @@ def collect_required_review_fields(page: Any) -> list[dict[str, Any]]:
             .filter(text => text.includes('*'));
         }"""
     )
+    text_lines = page.locator("body").evaluate(
+        """body => (body.innerText || '')
+          .split('\\n')
+          .map(text => text.replace(/\\s+/g, ' ').trim())
+          .filter(text => text.includes('*'))"""
+    )
+    labels.extend(text_lines)
+    labels.extend(collect_unhandled_visible_controls(page))
     return required_review_fields_from_labels(labels)
+
+
+def collect_unhandled_visible_controls(page: Any) -> list[str]:
+    handled_selectors = list(TEXT_FIELD_SELECTORS.values())
+    handled_selectors.extend(LINK_FIELD_SELECTORS.values())
+    handled_selectors.append('input[name="resume"]')
+    return page.locator("body").evaluate(
+        """(body, handledSelectors) => {
+          const visible = element => {
+            const rect = element.getBoundingClientRect();
+            const style = window.getComputedStyle(element);
+            return rect.width > 0 && rect.height > 0 &&
+              style.visibility !== 'hidden' && style.display !== 'none';
+          };
+          const clean = text => (text || '')
+            .replace(/\\s+/g, ' ')
+            .trim();
+          const handled = element => handledSelectors.some(selector => {
+            try {
+              return element.matches(selector);
+            } catch {
+              return false;
+            }
+          });
+          const labelFor = element => {
+            if (element.id) {
+              const label = document.querySelector(`label[for="${element.id}"]`);
+              if (label) return clean(label.innerText || label.textContent);
+            }
+            const optionLabels = new Set(['yes', 'no', 'not applicable']);
+            let group = element.parentElement;
+            for (let depth = 0; group && depth < 8; depth += 1, group = group.parentElement) {
+              const lines = (group.innerText || group.textContent || '')
+                .split('\\n')
+                .map(clean)
+                .filter(Boolean);
+              const match = lines.find(line => !optionLabels.has(line.toLowerCase()));
+              if (match) return match;
+            }
+            return '';
+          };
+          const controls = Array.from(document.querySelectorAll('input, textarea, select'))
+            .filter(visible)
+            .filter(element => !handled(element))
+            .filter(element => {
+              const type = (element.getAttribute('type') || '').toLowerCase();
+              if (['button', 'file', 'hidden', 'submit'].includes(type)) return false;
+              if (type === 'checkbox' || type === 'radio') {
+                if (element.checked) return false;
+                const name = element.getAttribute('name');
+                if (!name) return true;
+                return !Array.from(document.querySelectorAll(`input[name="${name}"]`))
+                  .some(candidate => candidate.checked);
+              }
+              return !element.value;
+            })
+            .map(labelFor)
+            .filter(Boolean);
+          return Array.from(new Set(controls));
+        }""",
+        handled_selectors,
+    )
 
 
 def required_review_fields_from_labels(labels: list[str]) -> list[dict[str, Any]]:
@@ -288,7 +366,11 @@ def required_review_fields_from_labels(labels: list[str]) -> list[dict[str, Any]
         if not normalized:
             continue
         lookup_key = normalized.lower()
-        if lookup_key in HANDLED_REQUIRED_LABELS or lookup_key in seen:
+        if (
+            lookup_key in HANDLED_REQUIRED_LABELS
+            or lookup_key in IGNORED_EMPTY_CONTROL_LABELS
+            or lookup_key in seen
+        ):
             continue
         seen.add(lookup_key)
         results.append(
