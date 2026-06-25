@@ -1,0 +1,3 @@
+OfferOps fake resume fixture.
+
+This file exists only to verify local browser file attachment.
