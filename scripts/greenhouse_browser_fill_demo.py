@@ -24,6 +24,22 @@ TEXT_FIELD_LABELS = {
     "location_city": "Location (City)",
 }
 FILE_FIELDS = ("resume", "cover_letter")
+CUSTOM_TEXT_FIELDS = {
+    "linkedin_profile": "Please share your LinkedIn profile",
+    "desired_salary": "What is your desired salary?",
+    "current_gpa": "What is your current cumulative GPA?",
+    "work_hours": "We are looking for someone to work 25 hours a week for 8-12 weeks. Knowing your school schedule, are you able to work that many hours?",
+}
+DROPDOWN_FIELDS = {
+    "phone_country": "country",
+    "visa_sponsorship": "question_67708023",
+    "acknowledgement": "question_67708024",
+    "gender": "gender",
+    "hispanic_ethnicity": "hispanic_ethnicity",
+    "race": "race",
+    "veteran_status": "veteran_status",
+    "disability_status": "disability_status",
+}
 DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 
@@ -56,8 +72,12 @@ def main() -> int:
             application_open_result = open_application_form(page)
             wait_for_greenhouse_form(page)
 
-            text_result = fill_text_fields(page, profile["text"])
             file_result = fill_file_fields(page, profile["files"])
+            dropdown_result = fill_dropdown_fields(page, profile.get("dropdowns", {}))
+            custom_text_result = fill_custom_text_fields(
+                page, profile.get("custom_text", {})
+            )
+            text_result = fill_text_fields(page, profile["text"])
             guard_result = install_submit_guard(page)
             page.screenshot(path=str(screenshot_path), full_page=True)
 
@@ -65,6 +85,8 @@ def main() -> int:
                 "url": args.url,
                 "application_open": application_open_result,
                 "text_fields": text_result,
+                "custom_text_fields": custom_text_result,
+                "dropdown_fields": dropdown_result,
                 "file_fields": file_result,
                 "submit_guard": guard_result,
                 "screenshot": str(screenshot_path),
@@ -74,7 +96,7 @@ def main() -> int:
                     "profile_values": "not_printed",
                 },
             }
-            print(json.dumps(result, indent=2, sort_keys=True))
+            print(json.dumps(result, indent=2, sort_keys=True), flush=True)
             exit_code = 0
         except Exception as exc:
             error_screenshot_path = screenshot_path.with_name(
@@ -97,7 +119,8 @@ def main() -> int:
                     },
                     indent=2,
                     sort_keys=True,
-                )
+                ),
+                flush=True,
             )
             exit_code = 1
         finally:
@@ -145,6 +168,13 @@ def load_profile(path: Path) -> dict[str, dict[str, str]]:
     if not isinstance(payload, dict):
         raise ValueError("profile file must contain a JSON object")
 
+    if isinstance(payload.get("identity"), dict):
+        return load_nested_profile(payload, path)
+
+    return load_flat_profile(payload, path)
+
+
+def load_flat_profile(payload: dict[str, Any], path: Path) -> dict[str, dict[str, str]]:
     text_profile: dict[str, str] = {}
     file_profile: dict[str, str] = {}
     for key in TEXT_FIELDS:
@@ -157,7 +187,125 @@ def load_profile(path: Path) -> dict[str, dict[str, str]]:
         if isinstance(value, str) and value:
             file_profile[key] = str((path.parent / value).resolve())
 
-    return {"text": text_profile, "files": file_profile}
+    return {
+        "text": text_profile,
+        "files": file_profile,
+        "custom_text": {},
+        "dropdowns": {},
+    }
+
+
+def load_nested_profile(payload: dict[str, Any], path: Path) -> dict[str, dict[str, str]]:
+    identity = dict_value(payload, "identity")
+    account = dict_value(payload, "account")
+    resume = dict_value(payload, "resume")
+    work_authorization = dict_value(payload, "work_authorization")
+    default_answers = dict_value(payload, "default_answers")
+    application_answers = dict_value(payload, "application_answers")
+    app_compensation = dict_value(application_answers, "compensation")
+    app_availability = dict_value(application_answers, "availability")
+    app_certification = dict_value(application_answers, "certification")
+    app_self_id = dict_value(application_answers, "self_identification")
+
+    first_name = string_value(identity, "first_name")
+    text_profile = compact_strings(
+        {
+            "first_name": first_name,
+            "last_name": string_value(identity, "last_name"),
+            "preferred_first_name": first_name,
+            "email": string_value(identity, "email") or string_value(account, "email"),
+            "phone": string_value(identity, "phone"),
+            "location_city": string_value(application_answers, "current_location")
+            or string_value(identity, "location"),
+        }
+    )
+    file_profile = compact_strings(
+        {
+            "resume": string_value(resume, "resume_path")
+            or string_value(resume, "original_resume_path"),
+            "cover_letter": string_value(payload, "cover_letter"),
+        }
+    )
+    custom_text = compact_strings(
+        {
+            "linkedin_profile": string_value(identity, "linkedin")
+            or string_value(default_answers, "linkedin"),
+            "desired_salary": string_value(app_compensation, "default_answer")
+            or string_value(default_answers, "compensation"),
+            "current_gpa": string_value(payload, "gpa"),
+            "work_hours": string_value(app_availability, "work_hours")
+            or string_value(app_availability, "able_to_work_hours")
+            or string_value(app_availability, "able_to_relocate_schedule"),
+        }
+    )
+    dropdowns = compact_strings(
+        {
+            "phone_country": infer_phone_country(text_profile.get("phone", "")),
+            "visa_sponsorship": yes_no_from_text(
+                string_value(work_authorization, "future_sponsorship_required")
+            ),
+            "acknowledgement": "Yes" if app_certification else "",
+            "gender": normalize_self_identification_answer(
+                string_value(default_answers, "gender"), "gender"
+            ),
+            "hispanic_ethnicity": string_value(app_self_id, "hispanic_latino")
+            or string_value(default_answers, "hispanic_latino"),
+            "race": string_value(default_answers, "race"),
+            "veteran_status": string_value(default_answers, "veteran_status"),
+            "disability_status": normalize_self_identification_answer(
+                string_value(default_answers, "disability_status"),
+                "disability_status",
+            ),
+        }
+    )
+
+    return {
+        "text": text_profile,
+        "files": file_profile,
+        "custom_text": custom_text,
+        "dropdowns": dropdowns,
+    }
+
+
+def dict_value(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    value = payload.get(key)
+    return value if isinstance(value, dict) else {}
+
+
+def string_value(payload: dict[str, Any], key: str) -> str:
+    value = payload.get(key)
+    return value.strip() if isinstance(value, str) else ""
+
+
+def compact_strings(payload: dict[str, str]) -> dict[str, str]:
+    return {key: value for key, value in payload.items() if value}
+
+
+def infer_phone_country(phone: str) -> str:
+    digits = "".join(character for character in phone if character.isdigit())
+    if phone.strip().startswith("+1") or len(digits) == 10:
+        return "United States"
+    return ""
+
+
+def yes_no_from_text(value: str) -> str:
+    lowered = value.strip().lower()
+    if lowered.startswith("yes"):
+        return "Yes"
+    if lowered.startswith("no"):
+        return "No"
+    return ""
+
+
+def normalize_self_identification_answer(value: str, field_key: str) -> str:
+    lowered = value.lower().replace("’", "'")
+    if "don't wish" not in lowered and "do not wish" not in lowered:
+        return value
+    if field_key == "gender":
+        return "Decline To Self Identify"
+    if field_key == "disability_status":
+        return "I do not want to answer"
+    return value
 
 
 def open_application_form(page: Any) -> dict[str, Any]:
@@ -233,61 +381,180 @@ def fill_labeled_input(page: Any, label: str, value: str) -> str:
     locator = page.locator(f'input[aria-label="{label}"], textarea[aria-label="{label}"]')
     if locator.count() == 0:
         locator = element_by_visible_label(page, label, "input, textarea")
-    if locator.count() == 0:
+    target = first_visible(locator)
+    if target is None:
         return "not_found"
 
-    locator.first.fill(value)
+    target.fill(value)
     return "filled"
 
 
-def fill_location(page: Any, value: str) -> str:
-    focused = page.locator("body").evaluate(
-        """(body) => {
-          const normalize = text => (text || '')
-            .replace(/\\*/g, '')
-            .replace(/\\s+/g, ' ')
-            .trim()
-            .toLowerCase();
-          const visible = element => {
-            const rect = element.getBoundingClientRect();
-            const style = window.getComputedStyle(element);
-            return rect.width > 0 && rect.height > 0 &&
-              style.visibility !== 'hidden' && style.display !== 'none';
-          };
-          const direct = document.querySelector('#candidate-location');
-          if (direct && visible(direct)) {
-            direct.scrollIntoView({block: 'center'});
-            direct.focus();
-            return true;
-          }
-          const labels = Array.from(document.querySelectorAll('label, div, span, p'))
-            .filter(visible);
-          for (const label of labels) {
-            const firstLine = normalize((label.innerText || label.textContent || '').split('\\n')[0]);
-            if (firstLine !== 'location (city)') continue;
-            const field = label.closest('.field-wrapper') || label.parentElement;
-            const combo = field && Array.from(field.querySelectorAll('input[role="combobox"]')).filter(visible)[0];
-            if (combo) {
-              combo.scrollIntoView({block: 'center'});
-              combo.focus();
-              return true;
-            }
-          }
-          return false;
-        }"""
-    )
-    if not focused:
-        return "not_found"
+def first_visible(locator: Any) -> Any | None:
+    for index in range(locator.count()):
+        candidate = locator.nth(index)
+        if candidate.is_visible():
+            return candidate
+    return None
 
-    page.keyboard.press("Meta+A")
-    page.keyboard.insert_text(value)
-    page.wait_for_timeout(1000)
-    page.keyboard.press("ArrowDown")
-    page.keyboard.press("Enter")
-    page.wait_for_timeout(500)
+
+def fill_custom_text_fields(page: Any, profile: dict[str, str]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for field_key, label in CUSTOM_TEXT_FIELDS.items():
+        value = profile.get(field_key)
+        if not value:
+            results.append(
+                {
+                    "field_key": field_key,
+                    "status": "missing_profile_value",
+                    "value_present": False,
+                }
+            )
+            continue
+
+        status = fill_labeled_input(page, label, value)
+        results.append(
+            {
+                "field_key": field_key,
+                "status": status,
+                "value_present": True,
+                "verified_value_matches": field_value_matches(
+                    page, field_key, label, value
+                ),
+            }
+        )
+    return results
+
+
+def fill_dropdown_fields(page: Any, profile: dict[str, str]) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for field_key, field_id in DROPDOWN_FIELDS.items():
+        value = profile.get(field_key)
+        if not value:
+            results.append(
+                {
+                    "field_key": field_key,
+                    "status": "missing_profile_value",
+                    "value_present": False,
+                }
+            )
+            continue
+
+        status = select_react_combobox(page, field_id, value)
+        results.append(
+            {
+                "field_key": field_key,
+                "status": status,
+                "value_present": True,
+                "verified_value_matches": react_combobox_value_matches(
+                    page, field_id, value
+                ),
+            }
+        )
+    return results
+
+
+def fill_location(page: Any, value: str) -> str:
+    status = select_react_combobox(page, "candidate-location", value)
+    if status != "filled":
+        return status
     if field_value_matches(page, "location_city", TEXT_FIELD_LABELS["location_city"], value):
         return "filled"
     return "needs_review"
+
+
+def select_react_combobox(page: Any, field_id: str, value: str) -> str:
+    input_locator = page.locator(f"#{field_id}")
+    if input_locator.count() == 0:
+        return "not_found"
+
+    input_locator.first.scroll_into_view_if_needed()
+    input_locator.first.click(force=True)
+    input_locator.first.fill(value)
+    page.wait_for_timeout(800)
+
+    if not click_visible_option_matching(page, value):
+        page.keyboard.press("ArrowDown")
+        page.keyboard.press("Enter")
+    page.wait_for_timeout(500)
+
+    return "filled" if react_combobox_value_matches(page, field_id, value) else "needs_review"
+
+
+def click_visible_option_matching(page: Any, expected: str) -> bool:
+    return bool(
+        page.locator("body").evaluate(
+            """(body, expectedTokens) => {
+              const visible = element => {
+                const rect = element.getBoundingClientRect();
+                const style = window.getComputedStyle(element);
+                return rect.width > 0 && rect.height > 0 &&
+                  style.visibility !== 'hidden' && style.display !== 'none';
+              };
+              const normalize = text => (text || '')
+                .replace(/\\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+              const options = Array.from(document.querySelectorAll('[role="option"], .select__option'))
+                .filter(visible);
+              for (const token of expectedTokens) {
+                const match = options.find(option => normalize(option.innerText || option.textContent).includes(token));
+                if (match) {
+                  match.click();
+                  return true;
+                }
+              }
+              return false;
+            }""",
+            normalized_tokens(expected),
+        )
+    )
+
+
+def react_combobox_value_matches(page: Any, field_id: str, expected: str) -> bool:
+    expected_tokens = normalized_tokens(expected)
+    if field_id == "country" and expected.lower() == "united states":
+        expected_tokens.append("+1")
+    if not expected_tokens:
+        return False
+    return bool(
+        page.locator("body").evaluate(
+            """(body, args) => {
+              const {fieldId, expectedTokens} = args;
+              const input = document.getElementById(fieldId);
+              if (!input) return false;
+              const control = input.closest('.select__control') ||
+                input.closest('.select__container');
+              const field = input.closest('.field-wrapper');
+              const selected = control && control.querySelector('.select__single-value');
+              const values = [
+                selected && (selected.innerText || selected.textContent),
+                field && (field.innerText || field.textContent),
+              ].map(value => (value || '').replace(/\\s+/g, ' ').trim().toLowerCase());
+              return expectedTokens.some(token => values.some(value => value.includes(token)));
+            }""",
+            {"fieldId": field_id, "expectedTokens": expected_tokens},
+        )
+    )
+
+
+def normalized_tokens(value: str) -> list[str]:
+    text = value.lower().replace("’", "'").strip()
+    tokens = [text]
+    if "," in text:
+        tokens.append(text.split(",", 1)[0].strip())
+    if "don't wish to answer" in text:
+        tokens.extend(
+            [
+                "decline",
+                "do not wish",
+                "don't wish",
+                "i don't wish",
+                "i do not wish",
+            ]
+        )
+    if text in {"yes", "no"}:
+        tokens.append(text)
+    return [token for token in tokens if token]
 
 
 def element_by_visible_label(page: Any, label: str, selector: str) -> Any:
@@ -302,30 +569,15 @@ def element_by_visible_label(page: Any, label: str, selector: str) -> Any:
 
 def field_value_matches(page: Any, field_key: str, label: str, expected: str) -> bool:
     if field_key == "location_city":
-        return bool(
-            page.locator("body").evaluate(
-                """(body, expected) => {
-                  const input = document.querySelector('#candidate-location');
-                  if (!input) return false;
-                  const field = input.closest('.field-wrapper');
-                  const control = input.closest('.select__control');
-                  const values = [
-                    input.value || '',
-                    field && (field.innerText || field.textContent || ''),
-                    control && (control.innerText || control.textContent || ''),
-                  ];
-                  return values.some(value => value.includes(expected));
-                }""",
-                expected,
-            )
-        )
+        return react_combobox_value_matches(page, "candidate-location", expected)
 
     locator = page.locator(f'input[aria-label="{label}"], textarea[aria-label="{label}"]')
     if locator.count() == 0:
         locator = element_by_visible_label(page, label, "input, textarea")
-    if locator.count() == 0:
+    target = first_visible(locator)
+    if target is None:
         return False
-    return locator.first.input_value() == expected
+    return target.input_value() == expected
 
 
 def fill_file_fields(page: Any, files: dict[str, str]) -> list[dict[str, Any]]:
@@ -350,11 +602,13 @@ def upload_file_input(page: Any, field_key: str, index: int, file_path: str) -> 
     if not path.exists():
         return {"field_key": field_key, "status": "missing_file"}
 
-    inputs = page.locator('input[type="file"]')
-    if inputs.count() <= index:
-        return {"field_key": field_key, "status": "not_found"}
+    attached = upload_file_with_visible_button(page, field_key, path)
+    if not attached:
+        inputs = page.locator('input[type="file"]')
+        if inputs.count() <= index:
+            return {"field_key": field_key, "status": "not_found"}
+        inputs.nth(index).set_input_files(str(path))
 
-    inputs.nth(index).set_input_files(str(path))
     try:
         page.get_by_text(path.name).wait_for(timeout=12_000)
         file_visible = True
@@ -367,6 +621,18 @@ def upload_file_input(page: Any, field_key: str, index: int, file_path: str) -> 
         "file_present": True,
         "verified_file_visible": file_visible,
     }
+
+
+def upload_file_with_visible_button(page: Any, field_key: str, path: Path) -> bool:
+    label = "Resume/CV" if field_key == "resume" else "Cover Letter"
+    try:
+        with page.expect_file_chooser(timeout=5_000) as file_chooser_info:
+            if not click_upload_option(page, label, "Attach"):
+                return False
+        file_chooser_info.value.set_files(str(path))
+        return True
+    except Exception:
+        return False
 
 
 def fill_cover_letter_manually(page: Any, file_path: str) -> dict[str, Any]:
