@@ -30,7 +30,7 @@ class GreenhouseBrowserFillDemoTests(unittest.TestCase):
         self.assertEqual(profile["text"]["first_name"], "Ada")
         self.assertEqual(profile["text"]["email"], "ada@example.test")
         self.assertEqual(profile["text"]["location_city"], "San Francisco, CA")
-        self.assertTrue(profile["files"]["resume"].endswith("fake_resume.txt"))
+        self.assertTrue(profile["files"]["resume"].endswith("fake_resume.pdf"))
         self.assertTrue(profile["files"]["cover_letter"].endswith("fake_cover_letter.txt"))
 
     def test_load_profile_accepts_nested_real_profile_shape(self) -> None:
