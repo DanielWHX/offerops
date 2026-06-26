@@ -3,6 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+WorkdayStage = Literal[
+    "account_gate",
+    "my_information",
+    "my_experience",
+    "application_questions",
+    "voluntary_disclosures",
+    "review",
+    "unknown",
+]
+
 FieldReviewIssue = Literal["missing", "deterministic_fill_failed"]
 AgentReviewAction = Literal["infer_from_context", "inspect_failed_fill", "ask_human"]
 HumanReviewReason = Literal[
@@ -60,6 +70,20 @@ class ParserResult:
             "job_title": self.job_title,
             "company": self.company,
             "location": self.location,
+        }
+
+
+@dataclass(frozen=True)
+class WorkdayStageDetection:
+    stage: WorkdayStage
+    confidence: float
+    reason: str
+
+    def to_dict(self) -> dict[str, str | float]:
+        return {
+            "stage": self.stage,
+            "confidence": self.confidence,
+            "reason": self.reason,
         }
 
 
