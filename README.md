@@ -162,6 +162,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - [MVP Seed Issues](./docs/MVP_ISSUES.md)
 - [Sprint Roadmap](./docs/SPRINT_ROADMAP.md)
 - [Workday Read-only Safety Boundaries](./docs/WORKDAY_READ_ONLY_SAFETY.md)
+- [Report Examples](./docs/REPORT_EXAMPLES.md)
 
 ## Safety Rule
 

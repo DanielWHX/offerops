@@ -1,0 +1,18 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "allowed_next_actions": [
+      "preview_current_stage",
+      "human_review"
+    ],
+    "confidence": 0.95,
+    "reason": "matched:my_information:my_information,contact_information,legal_name,country_phone_code,phone_number,address_line",
+    "review_reasons": [
+      "final_submit_boundary"
+    ],
+    "stage": "my_information"
+  },
+  "message": "Workday stage detected from saved HTML; no browser automation used.",
+  "provider": "workday",
+  "status": "planned"
+}
