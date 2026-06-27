@@ -14,7 +14,7 @@ class WorkdayAdapter(SkeletonAdapter):
     display_name = "Workday"
 
     def plan(self, context: AdapterContext) -> AdapterResult:
-        if not context.html:
+        if context.html is None:
             return super().plan(context)
 
         stage_detection = detect_workday_stage(context.html)

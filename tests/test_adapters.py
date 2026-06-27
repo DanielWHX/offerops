@@ -106,6 +106,25 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(details["reason"], "no_workday_stage_signal")
         self.assertEqual(details["review_reasons"], ["unknown_application_state"])
 
+    def test_workday_adapter_plan_empty_saved_html_requires_manual_review(self) -> None:
+        parser_result = parse_job_page(
+            "https://example.wd5.myworkdayjobs.com/job/example",
+            "",
+        )
+
+        adapter_result = plan_adapter(parser_result, "")
+        payload = adapter_result.to_dict()
+
+        self.assertEqual(payload["provider"], "workday")
+        self.assertEqual(payload["adapter"], "workday_adapter")
+        self.assertEqual(payload["status"], "manual_review_required")
+        details = payload["details"]
+        self.assertIsInstance(details, dict)
+        self.assertEqual(details["stage"], "unknown")
+        self.assertEqual(details["confidence"], 0.0)
+        self.assertEqual(details["reason"], "no_workday_stage_signal")
+        self.assertEqual(details["review_reasons"], ["unknown_application_state"])
+
     def test_unknown_adapter_requires_manual_review(self) -> None:
         result = ParserResult(
             provider="unknown",
