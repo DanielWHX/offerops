@@ -1,0 +1,6 @@
+{
+  "adapter": "lever_adapter",
+  "message": "Lever adapter skeleton is registered but not implemented.",
+  "provider": "lever",
+  "status": "not_implemented"
+}

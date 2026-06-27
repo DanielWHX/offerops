@@ -1,0 +1,111 @@
+{
+  "adapter": "greenhouse_adapter",
+  "details": {
+    "field_count": 5,
+    "fields": [
+      {
+        "field_key": "first_name",
+        "input_name": "job_application[first_name]",
+        "input_type": "input",
+        "label": "First Name",
+        "required": true
+      },
+      {
+        "field_key": "last_name",
+        "input_name": "job_application[last_name]",
+        "input_type": "input",
+        "label": "Last Name",
+        "required": true
+      },
+      {
+        "field_key": "email",
+        "input_name": "job_application[email]",
+        "input_type": "email",
+        "label": "Email",
+        "required": true
+      },
+      {
+        "field_key": "phone",
+        "input_name": "job_application[phone]",
+        "input_type": "tel",
+        "label": "Phone",
+        "required": false
+      },
+      {
+        "field_key": "resume",
+        "input_name": "job_application[resume]",
+        "input_type": "file",
+        "label": "Resume/CV",
+        "required": true
+      }
+    ],
+    "fill_plan": [
+      {
+        "action": "fill_text",
+        "field_key": "first_name",
+        "input_name": "job_application[first_name]",
+        "label": "First Name",
+        "status": "ready",
+        "value_present": true,
+        "value_source": "profile.first_name"
+      },
+      {
+        "action": "fill_text",
+        "field_key": "last_name",
+        "input_name": "job_application[last_name]",
+        "label": "Last Name",
+        "status": "ready",
+        "value_present": true,
+        "value_source": "profile.last_name"
+      },
+      {
+        "action": "fill_text",
+        "field_key": "email",
+        "input_name": "job_application[email]",
+        "label": "Email",
+        "status": "ready",
+        "value_present": true,
+        "value_source": "profile.email"
+      },
+      {
+        "action": "fill_text",
+        "field_key": "phone",
+        "input_name": "job_application[phone]",
+        "label": "Phone",
+        "status": "ready",
+        "value_present": true,
+        "value_source": "profile.phone"
+      },
+      {
+        "action": "review_required",
+        "field_key": "resume",
+        "input_name": "job_application[resume]",
+        "label": "Resume/CV",
+        "status": "missing_required",
+        "value_present": false,
+        "value_source": "profile.resume"
+      }
+    ],
+    "planned_steps": [
+      "inspect_application_fields",
+      "prepare_deterministic_fill",
+      "stop_before_final_submit"
+    ],
+    "review_items": [
+      {
+        "field_key": "resume",
+        "issue": "profile_value_missing",
+        "label": "Resume/CV",
+        "required": true,
+        "value_source": "profile.resume"
+      }
+    ],
+    "review_reasons": [
+      "required_profile_value_missing",
+      "final_submit_boundary"
+    ]
+  },
+  "message": "Greenhouse application field preflight completed; stop before any form execution.",
+  "provider": "greenhouse",
+  "status": "planned"
+}

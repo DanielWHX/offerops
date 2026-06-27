@@ -1,0 +1,6 @@
+{
+  "adapter": "unknown_adapter",
+  "message": "Unknown ATS provider; stop and require manual review.",
+  "provider": "unknown",
+  "status": "manual_review_required"
+}
