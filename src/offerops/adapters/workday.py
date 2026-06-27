@@ -136,7 +136,16 @@ class _VisibleTextParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.parts: list[str] = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() in {"script", "style"}:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in {"script", "style"} and self._skip_depth:
+            self._skip_depth -= 1
 
     def handle_data(self, data: str) -> None:
-        if data.strip():
+        if not self._skip_depth and data.strip():
             self.parts.append(data)

@@ -55,6 +55,29 @@ class WorkdayStageDetectorTests(unittest.TestCase):
         self.assertEqual(result.stage, "application_questions")
         self.assertGreaterEqual(result.confidence, 0.7)
 
+    def test_hidden_script_and_style_strings_do_not_override_visible_stage(self) -> None:
+        result = detect_workday_stage(
+            """
+            <!doctype html>
+            <html>
+              <head>
+                <script>Review Your Application Submit Application</script>
+                <style>.hidden::before { content: "Review Your Application"; }</style>
+              </head>
+              <body>
+                <main>
+                  <h1>My Information</h1>
+                  <label>Legal Name</label>
+                  <label>Country Phone Code</label>
+                </main>
+              </body>
+            </html>
+            """
+        )
+
+        self.assertEqual(result.stage, "my_information")
+        self.assertIn("my_information", result.reason)
+
     def test_low_signal_content_returns_unknown_for_human_review(self) -> None:
         result = detect_workday_stage(_fixture("workday_stage_unknown.html"))
 
