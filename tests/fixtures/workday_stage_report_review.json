@@ -1,0 +1,14 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "confidence": 0.95,
+    "reason": "matched:review:review_your_application,submit_application,review",
+    "review_reasons": [
+      "final_submit_boundary"
+    ],
+    "stage": "review"
+  },
+  "message": "Workday stage detected from saved HTML; no browser automation used.",
+  "provider": "workday",
+  "status": "planned"
+}

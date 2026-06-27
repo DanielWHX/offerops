@@ -1,0 +1,14 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "confidence": 0.95,
+    "reason": "matched:application_questions:application_questions,legally_authorized,future_require_sponsorship,sponsorship",
+    "review_reasons": [
+      "final_submit_boundary"
+    ],
+    "stage": "application_questions"
+  },
+  "message": "Workday stage detected from saved HTML; no browser automation used.",
+  "provider": "workday",
+  "status": "planned"
+}

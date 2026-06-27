@@ -1,0 +1,14 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "confidence": 0.95,
+    "reason": "matched:voluntary_disclosures:voluntary_disclosures,self_identify,race_ethnicity,veteran,disability,gender",
+    "review_reasons": [
+      "final_submit_boundary"
+    ],
+    "stage": "voluntary_disclosures"
+  },
+  "message": "Workday stage detected from saved HTML; no browser automation used.",
+  "provider": "workday",
+  "status": "planned"
+}

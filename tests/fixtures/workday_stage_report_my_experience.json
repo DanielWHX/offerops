@@ -1,0 +1,14 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "confidence": 0.95,
+    "reason": "matched:my_experience:my_experience,resume_cv,upload_a_file,work_experience,education",
+    "review_reasons": [
+      "final_submit_boundary"
+    ],
+    "stage": "my_experience"
+  },
+  "message": "Workday stage detected from saved HTML; no browser automation used.",
+  "provider": "workday",
+  "status": "planned"
+}

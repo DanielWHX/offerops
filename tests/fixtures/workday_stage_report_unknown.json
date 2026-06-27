@@ -1,0 +1,14 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "confidence": 0.0,
+    "reason": "no_workday_stage_signal",
+    "review_reasons": [
+      "unknown_application_state"
+    ],
+    "stage": "unknown"
+  },
+  "message": "Workday stage is unknown or low confidence; stop for human review.",
+  "provider": "workday",
+  "status": "manual_review_required"
+}
