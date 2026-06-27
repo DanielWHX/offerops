@@ -4,7 +4,7 @@ Human-in-the-loop job application workflow assistant.
 
 ## MVP
 
-The first milestone is the smallest useful Job Page Parser:
+The first milestone built the smallest useful Job Page Parser:
 
 ```text
 Input one job URL
@@ -16,15 +16,25 @@ Input one job URL
 -> stop before final submit
 ```
 
+The current roadmap extends that parser into provider demos, Workday staged
+planning, and one unified planning report. See
+[`docs/SPRINT_ROADMAP.md`](./docs/SPRINT_ROADMAP.md).
+
 ## Core Principle
 
 Deterministic first, AI fallback.
 
 AI should not be the main browser executor. It should only help with uncertain semantic tasks such as unclear labels, missing fields, and unknown page states.
 
-## Current Slice
+## Current State
 
-The parser now has two explicit model layers:
+Completed surfaces:
+
+- MVP 0: Job Page Parser.
+- MVP 1: Greenhouse and Lever browser demos plus unified browser demo router.
+- MVP 2 start: Workday read-only stage detector.
+
+The parser has two explicit model layers:
 
 ```text
 ProviderDetection: URL -> provider/adapter/reason
@@ -37,6 +47,20 @@ The adapter layer is registered and non-executing:
 Greenhouse application HTML -> status=planned
 Other known provider adapter -> status=not_implemented
 Unknown adapter -> status=manual_review_required
+```
+
+Provider-specific demo entrypoints:
+
+```text
+scripts/run_browser_demo.sh -> route supported URLs
+scripts/run_greenhouse_demo.sh -> Greenhouse safe browser demo
+scripts/run_lever_demo.sh -> Lever safe browser demo
+```
+
+Workday staged planning has started with:
+
+```text
+detect_workday_stage(saved_content) -> stage/confidence/reason
 ```
 
 The Agent Fallback contract is defined but not executed:
@@ -136,6 +160,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - [Agent Workflow](./AGENTS.md)
 - [GitHub Project Setup](./docs/GITHUB_PROJECT_SETUP.md)
 - [MVP Seed Issues](./docs/MVP_ISSUES.md)
+- [Sprint Roadmap](./docs/SPRINT_ROADMAP.md)
 
 ## Safety Rule
 
