@@ -79,6 +79,10 @@ Ready issues:
 3. #44 `Add Workday stage report JSON fixtures`
 4. #45 `Document Workday read-only safety boundaries`
 
+Safety reference:
+
+- `docs/WORKDAY_READ_ONLY_SAFETY.md`
+
 Done criteria:
 
 - `offerops plan <workday-url> --html-file saved.html` can report
