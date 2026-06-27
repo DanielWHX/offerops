@@ -1,6 +1,10 @@
 {
   "adapter": "workday_adapter",
   "details": {
+    "allowed_next_actions": [
+      "preview_current_stage",
+      "human_review"
+    ],
     "confidence": 0.95,
     "reason": "matched:account_gate:sign_in,create_account,already_have_an_account,email_address,password",
     "review_reasons": [

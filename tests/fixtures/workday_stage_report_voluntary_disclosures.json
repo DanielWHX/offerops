@@ -1,6 +1,10 @@
 {
   "adapter": "workday_adapter",
   "details": {
+    "allowed_next_actions": [
+      "preview_current_stage",
+      "human_review"
+    ],
     "confidence": 0.95,
     "reason": "matched:voluntary_disclosures:voluntary_disclosures,self_identify,race_ethnicity,veteran,disability,gender",
     "review_reasons": [

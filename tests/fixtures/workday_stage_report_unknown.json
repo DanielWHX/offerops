@@ -1,6 +1,9 @@
 {
   "adapter": "workday_adapter",
   "details": {
+    "allowed_next_actions": [
+      "human_review"
+    ],
     "confidence": 0.0,
     "reason": "no_workday_stage_signal",
     "review_reasons": [
