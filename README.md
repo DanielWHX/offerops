@@ -161,6 +161,7 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 - [GitHub Project Setup](./docs/GITHUB_PROJECT_SETUP.md)
 - [MVP Seed Issues](./docs/MVP_ISSUES.md)
 - [Sprint Roadmap](./docs/SPRINT_ROADMAP.md)
+- [Workday Read-only Safety Boundaries](./docs/WORKDAY_READ_ONLY_SAFETY.md)
 
 ## Safety Rule
 

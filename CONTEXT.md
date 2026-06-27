@@ -35,13 +35,14 @@ The first MVP focuses on the smallest useful slice:
 
 ## Current State
 
-The current active slice is Sprint 0 project control reset.
+The current active sprint is Sprint 1: Workday read-only planning surface.
 
 - MVP 0: Job Page Parser is complete.
 - MVP 1: Greenhouse and Lever browser demos plus the unified browser demo router are complete.
 - MVP 2 has started with the Workday read-only stage detector.
-- Issue #41: `Reset OfferOps project control surface`.
-- Open Ready issues for Sprint 1: #42, #43, #44, #45.
+- Issue #41: `Reset OfferOps project control surface` is complete.
+- Active Sprint 1 issues: #42 and #45.
+- Open Ready issues for Sprint 1: #43 and #44.
 - Backlog issues for later Workday preview and unified report work: #46 through #53.
 - Project board: `OfferOps MVP`.
 
@@ -54,6 +55,7 @@ Current implementation surfaces:
 - Greenhouse demo runner: `scripts/run_greenhouse_demo.sh`.
 - Lever demo runner: `scripts/run_lever_demo.sh`.
 - Workday read-only detector: `detect_workday_stage(saved_content)`.
+- Workday safety reference: `docs/WORKDAY_READ_ONLY_SAFETY.md`.
 
 Standard verification loop:
 
