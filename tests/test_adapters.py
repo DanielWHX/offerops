@@ -67,6 +67,45 @@ class AdapterRegistryTests(unittest.TestCase):
         self.assertEqual(adapter_result.adapter, "workday_adapter")
         self.assertEqual(adapter_result.status, "not_implemented")
 
+    def test_workday_adapter_plan_reports_stage_from_saved_html(self) -> None:
+        html = _fixture("workday_stage_my_information.html")
+        parser_result = parse_job_page(
+            "https://example.wd5.myworkdayjobs.com/job/example",
+            html,
+        )
+
+        adapter_result = plan_adapter(parser_result, html)
+        payload = adapter_result.to_dict()
+
+        self.assertEqual(payload["provider"], "workday")
+        self.assertEqual(payload["adapter"], "workday_adapter")
+        self.assertEqual(payload["status"], "planned")
+        details = payload["details"]
+        self.assertIsInstance(details, dict)
+        self.assertEqual(details["stage"], "my_information")
+        self.assertGreaterEqual(details["confidence"], 0.7)
+        self.assertIn("my_information", details["reason"])
+
+    def test_workday_adapter_plan_unknown_stage_requires_manual_review(self) -> None:
+        html = _fixture("workday_stage_unknown.html")
+        parser_result = parse_job_page(
+            "https://example.wd5.myworkdayjobs.com/job/example",
+            html,
+        )
+
+        adapter_result = plan_adapter(parser_result, html)
+        payload = adapter_result.to_dict()
+
+        self.assertEqual(payload["provider"], "workday")
+        self.assertEqual(payload["adapter"], "workday_adapter")
+        self.assertEqual(payload["status"], "manual_review_required")
+        details = payload["details"]
+        self.assertIsInstance(details, dict)
+        self.assertEqual(details["stage"], "unknown")
+        self.assertEqual(details["confidence"], 0.0)
+        self.assertEqual(details["reason"], "no_workday_stage_signal")
+        self.assertEqual(details["review_reasons"], ["unknown_application_state"])
+
     def test_unknown_adapter_requires_manual_review(self) -> None:
         result = ParserResult(
             provider="unknown",
@@ -160,6 +199,30 @@ class AdapterRegistryTests(unittest.TestCase):
             ["required_profile_value_missing", "final_submit_boundary"],
         )
         self.assertEqual(payload["details"]["review_items"][0]["field_key"], "resume")
+
+    def test_cli_plan_outputs_workday_stage_report_from_saved_html(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "offerops",
+                "plan",
+                "https://example.wd5.myworkdayjobs.com/job/example",
+                "--html-file",
+                str(FIXTURES / "workday_stage_my_information.html"),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        payload = json.loads(completed.stdout)
+        self.assertEqual(payload["provider"], "workday")
+        self.assertEqual(payload["adapter"], "workday_adapter")
+        self.assertEqual(payload["status"], "planned")
+        self.assertEqual(payload["details"]["stage"], "my_information")
+        self.assertGreaterEqual(payload["details"]["confidence"], 0.7)
+        self.assertIn("my_information", payload["details"]["reason"])
 
     def test_cli_plan_outputs_known_provider_adapter_result(self) -> None:
         completed = subprocess.run(

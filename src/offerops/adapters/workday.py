@@ -5,13 +5,45 @@ from html.parser import HTMLParser
 
 from offerops.models import WorkdayStage, WorkdayStageDetection
 
-from .base import SkeletonAdapter
+from .base import AdapterContext, AdapterResult, SkeletonAdapter
 
 
 class WorkdayAdapter(SkeletonAdapter):
     provider = "workday"
     adapter = "workday_adapter"
     display_name = "Workday"
+
+    def plan(self, context: AdapterContext) -> AdapterResult:
+        if not context.html:
+            return super().plan(context)
+
+        stage_detection = detect_workday_stage(context.html)
+        details: dict[str, object] = stage_detection.to_dict()
+
+        if stage_detection.stage == "unknown" or stage_detection.confidence < 0.7:
+            details["review_reasons"] = ["unknown_application_state"]
+            return AdapterResult(
+                provider=self.provider,
+                adapter=self.adapter,
+                status="manual_review_required",
+                message=(
+                    "Workday stage is unknown or low confidence; "
+                    "stop for human review."
+                ),
+                details=details,
+            )
+
+        details["review_reasons"] = ["final_submit_boundary"]
+        return AdapterResult(
+            provider=self.provider,
+            adapter=self.adapter,
+            status="planned",
+            message=(
+                "Workday stage detected from saved HTML; "
+                "no browser automation used."
+            ),
+            details=details,
+        )
 
 
 _MIN_STAGE_SCORE = 4
