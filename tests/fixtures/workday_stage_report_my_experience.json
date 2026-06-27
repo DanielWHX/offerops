@@ -1,6 +1,10 @@
 {
   "adapter": "workday_adapter",
   "details": {
+    "allowed_next_actions": [
+      "preview_current_stage",
+      "human_review"
+    ],
     "confidence": 0.95,
     "reason": "matched:my_experience:my_experience,resume_cv,upload_a_file,work_experience,education",
     "review_reasons": [

@@ -19,6 +19,7 @@ class WorkdayAdapter(SkeletonAdapter):
 
         stage_detection = detect_workday_stage(context.html)
         details: dict[str, object] = stage_detection.to_dict()
+        details["allowed_next_actions"] = _allowed_next_actions(stage_detection)
 
         if stage_detection.stage == "unknown" or stage_detection.confidence < 0.7:
             details["review_reasons"] = ["unknown_application_state"]
@@ -44,6 +45,16 @@ class WorkdayAdapter(SkeletonAdapter):
             ),
             details=details,
         )
+
+
+def _allowed_next_actions(stage_detection: WorkdayStageDetection) -> list[str]:
+    if (
+        stage_detection.stage in {"unknown", "review"}
+        or stage_detection.confidence < 0.7
+    ):
+        return ["human_review"]
+
+    return ["preview_current_stage", "human_review"]
 
 
 _MIN_STAGE_SCORE = 4

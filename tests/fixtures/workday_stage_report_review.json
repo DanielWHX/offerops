@@ -1,6 +1,9 @@
 {
   "adapter": "workday_adapter",
   "details": {
+    "allowed_next_actions": [
+      "human_review"
+    ],
     "confidence": 0.95,
     "reason": "matched:review:review_your_application,submit_application,review",
     "review_reasons": [
