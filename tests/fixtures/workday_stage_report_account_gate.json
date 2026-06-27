@@ -1,0 +1,14 @@
+{
+  "adapter": "workday_adapter",
+  "details": {
+    "confidence": 0.95,
+    "reason": "matched:account_gate:sign_in,create_account,already_have_an_account,email_address,password",
+    "review_reasons": [
+      "final_submit_boundary"
+    ],
+    "stage": "account_gate"
+  },
+  "message": "Workday stage detected from saved HTML; no browser automation used.",
+  "provider": "workday",
+  "status": "planned"
+}
